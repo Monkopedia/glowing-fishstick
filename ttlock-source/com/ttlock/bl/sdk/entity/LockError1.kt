@@ -1,4 +1,4 @@
-package com.ttlock.bl.sdk.entityimport
+package com.ttlock.bl.sdk.entity
 
 import com.ttlock.bl.sdk.entity.LockError.BAD_WIFI_NAME
 import com.ttlock.bl.sdk.entity.LockError.BAD_WIFI_PASSWORD
@@ -35,7 +35,7 @@ import com.ttlock.bl.sdk.entity.LockError.PARKING_LOCK_LOCKED_FAILED
 import com.ttlock.bl.sdk.entity.LockError.RECORD_NOT_EXIST
 import com.ttlock.bl.sdk.entity.LockError.SUCCESS
 
-com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.DigitUtil
 import com.ttlock.bl.sdk.entity.LockVersion
 import com.ttlock.bl.sdk.constant.LockType
 import com.scaf.android.client.CodecUtils

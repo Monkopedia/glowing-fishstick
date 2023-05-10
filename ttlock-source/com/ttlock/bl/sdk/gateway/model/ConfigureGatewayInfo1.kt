@@ -1,8 +1,8 @@
-package com.ttlock.bl.sdk.gateway.modelimport
+package com.ttlock.bl.sdk.gateway.model
 
 import java.util.*
 
-com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.DigitUtil
 import com.ttlock.bl.sdk.entity.LockVersion
 import com.ttlock.bl.sdk.constant.LockType
 import com.scaf.android.client.CodecUtils

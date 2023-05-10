@@ -1,9 +1,9 @@
-package com.ttlock.bl.sdk.wirelessdoorsensor.callbackimport
+package com.ttlock.bl.sdk.wirelessdoorsensor.callback
 
 import com.ttlock.bl.sdk.device.WirelessDoorSensor
 import com.ttlock.bl.sdk.wirelessdoorsensor.callback.DoorSensorCallback
 
-com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.DigitUtil
 import com.ttlock.bl.sdk.entity.LockVersion
 import com.ttlock.bl.sdk.constant.LockType
 import com.scaf.android.client.CodecUtils

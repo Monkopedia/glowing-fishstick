@@ -1,8 +1,8 @@
-package com.ttlock.bl.sdk.remote.callbackimport
+package com.ttlock.bl.sdk.remote.callback
 
 import com.ttlock.bl.sdk.remote.model.RemoteError
 
-com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.DigitUtil
 import com.ttlock.bl.sdk.entity.LockVersion
 import com.ttlock.bl.sdk.constant.LockType
 import com.scaf.android.client.CodecUtils

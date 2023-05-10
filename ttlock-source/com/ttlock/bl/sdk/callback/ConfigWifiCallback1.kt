@@ -1,8 +1,8 @@
-package com.ttlock.bl.sdk.callbackimport
+package com.ttlock.bl.sdk.callback
 
 import com.ttlock.bl.sdk.callback.LockCallback
 
-com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.DigitUtil
 import com.ttlock.bl.sdk.entity.LockVersion
 import com.ttlock.bl.sdk.constant.LockType
 import com.scaf.android.client.CodecUtils

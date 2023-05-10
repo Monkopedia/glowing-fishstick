@@ -2,7 +2,7 @@
  * Copyright (C) 2015 The Telink Bluetooth Light Project
  *
  */
-package com.ttlock.bl.sdk.telink.bleimport
+package com.ttlock.bl.sdk.telink.ble
 
 import com.ttlock.bl.sdk.telink.ble.Command
 import com.ttlock.bl.sdk.telink.ble.Command.CommandType
@@ -11,7 +11,7 @@ import com.ttlock.bl.sdk.telink.bleimport.Command.CommandType.WRITE
 import com.ttlock.bl.sdk.telink.util.Arrays
 import java.util.*
 
-com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.DigitUtil
 import com.ttlock.bl.sdk.entity.LockVersion
 import com.ttlock.bl.sdk.constant.LockType
 import com.scaf.android.client.CodecUtils

@@ -1,4 +1,4 @@
-package com.ttlock.bl.sdk.entityimport
+package com.ttlock.bl.sdk.entity
 
 import com.ttlock.bl.sdk.entity.Error.FR_NOT_EXIST
 import com.ttlock.bl.sdk.entity.Error.IC_CARD_NOT_EXIST
@@ -27,7 +27,7 @@ import com.ttlock.bl.sdk.entity.Error.LOCK_USER_TIME_INEFFECTIVE
 import com.ttlock.bl.sdk.entity.Error.RECORD_NOT_EXIST
 import com.ttlock.bl.sdk.entity.Error.SUCCESS
 
-com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.DigitUtil
 import com.ttlock.bl.sdk.entity.LockVersion
 import com.ttlock.bl.sdk.constant.LockType
 import com.scaf.android.client.CodecUtils

@@ -1,4 +1,4 @@
-package com.ttlock.bl.sdk.entityimport
+package com.ttlock.bl.sdk.entity
 
 import com.ttlock.bl.sdk.constant.Constant
 import com.ttlock.bl.sdk.entity.CyclicConfig
@@ -6,7 +6,7 @@ import com.ttlock.bl.sdk.entity.ValidityInfo
 import com.ttlock.bl.sdk.util.LogUtil
 import java.io.Serializable
 
-com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.DigitUtil
 import com.ttlock.bl.sdk.entity.LockVersion
 import com.ttlock.bl.sdk.constant.LockType
 import com.scaf.android.client.CodecUtils

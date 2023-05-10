@@ -1,10 +1,10 @@
-package com.ttlock.bl.sdk.gateway.callbackimport
+package com.ttlock.bl.sdk.gateway.callback
 
 import com.ttlock.bl.sdk.gateway.callback.GatewayCallback
 import com.ttlock.bl.sdk.gateway.model.GatewayError
 import com.ttlock.bl.sdk.gateway.model.WiFi
 
-com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.DigitUtil
 import com.ttlock.bl.sdk.entity.LockVersion
 import com.ttlock.bl.sdk.constant.LockType
 import com.scaf.android.client.CodecUtils

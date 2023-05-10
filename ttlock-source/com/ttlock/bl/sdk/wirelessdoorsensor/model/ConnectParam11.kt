@@ -1,6 +1,6 @@
-package com.ttlock.bl.sdk.wirelessdoorsensor.modelimport
+package com.ttlock.bl.sdk.wirelessdoorsensor.model
 
-com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.DigitUtil
 import com.ttlock.bl.sdk.entity.LockVersion
 import com.ttlock.bl.sdk.constant.LockType
 import com.scaf.android.client.CodecUtils

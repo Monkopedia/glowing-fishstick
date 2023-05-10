@@ -1,10 +1,10 @@
-package com.ttlock.bl.sdk.entityimport
+package com.ttlock.bl.sdk.entity
 
 import com.ttlock.bl.sdk.entity.DeviceInfo
 import java.text.ParseException
 import java.util.*
 
-com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.DigitUtil
 import com.ttlock.bl.sdk.entity.LockVersion
 import com.ttlock.bl.sdk.constant.LockType
 import com.scaf.android.client.CodecUtils

@@ -1,4 +1,4 @@
-package com.ttlock.bl.sdk.remote.commandimport
+package com.ttlock.bl.sdk.remote.command
 
 import com.ttlock.bl.sdk.device.Remote
 import com.ttlock.bl.sdk.remote.api.GattCallbackHelper
@@ -6,7 +6,7 @@ import com.ttlock.bl.sdk.remote.command.Command
 import com.ttlock.bl.sdk.remote.model.ConnectParam
 import java.lang.Exception
 
-com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.DigitUtil
 import com.ttlock.bl.sdk.entity.LockVersion
 import com.ttlock.bl.sdk.constant.LockType
 import com.scaf.android.client.CodecUtils

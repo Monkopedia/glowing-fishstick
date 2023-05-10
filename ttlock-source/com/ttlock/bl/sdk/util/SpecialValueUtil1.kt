@@ -1,6 +1,6 @@
-package com.ttlock.bl.sdk.utilimport
+package com.ttlock.bl.sdk.util
 
-com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.DigitUtil
 import com.ttlock.bl.sdk.entity.LockVersion
 import com.ttlock.bl.sdk.constant.LockType
 import com.scaf.android.client.CodecUtils

@@ -1,8 +1,8 @@
-package com.ttlock.bl.sdk.serviceimport
+package com.ttlock.bl.sdk.service
 
 import com.ttlock.bl.sdk.service.ThreadPool
 
-com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.DigitUtil
 import com.ttlock.bl.sdk.entity.LockVersion
 import com.ttlock.bl.sdk.constant.LockType
 import com.scaf.android.client.CodecUtils

@@ -1,8 +1,8 @@
-package com.ttlock.bl.sdk.scannerimport
+package com.ttlock.bl.sdk.scanner
 
 import com.ttlock.bl.sdk.api.ExtendedBluetoothDevice
 
-com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.DigitUtil
 import com.ttlock.bl.sdk.entity.LockVersion
 import com.ttlock.bl.sdk.constant.LockType
 import com.scaf.android.client.CodecUtils
