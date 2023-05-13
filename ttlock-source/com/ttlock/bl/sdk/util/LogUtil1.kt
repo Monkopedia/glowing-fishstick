@@ -28,7 +28,7 @@ object LogUtil {
         callerMethodName = caller.methodName
         callerLineNumber = caller.lineNumber
 
-        //TODO:测试  增加一个标志位进行判断是否输出
+        // TODO:测试  增加一个标志位进行判断是否输出
 //        try {
 //            if (callerMethodName.contains("disconnect")) {
 //                caller = new Throwable().getStackTrace()[3];

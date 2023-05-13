@@ -1,6 +1,9 @@
 package com.ttlock.bl.sdk.util
 
-import android.text.TextUtils
+import android.util.TextUtils
+import com.ttlock.bl.sdk.api.EncryptionUtil
+import com.ttlock.bl.sdk.entity.LockData
+import java.math.BigInteger
 
 /**
  * Created on  2019/4/30 0030 16:25
@@ -14,9 +17,9 @@ object FeatureValueUtil {
     }
 
     fun isSupportFeature(lockDataObj: LockData?, newFeature: Int): Boolean {
-        return if (lockDataObj == null || lockDataObj.featureValue == null) {
+        return if (lockDataObj?.featureValue == null) {
             false
-        } else isSupportFeatureValue(lockDataObj.featureValue, newFeature)
+        } else isSupportFeatureValue(lockDataObj.featureValue!!, newFeature)
     }
 
     private fun isSupportFeatureValue(featureValue: String, newFeature: Int): Boolean {

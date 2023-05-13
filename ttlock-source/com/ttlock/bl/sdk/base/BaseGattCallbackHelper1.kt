@@ -1,6 +1,21 @@
 package com.ttlock.bl.sdk.base
 
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCallback
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
+import android.bluetooth.BluetoothGattService
+import android.bluetooth.BluetoothProfile
+import android.util.Context
+import android.util.Handler
+import android.util.Looper
+import com.ttlock.bl.sdk.device.TTDevice
+import com.ttlock.bl.sdk.entity.FirmwareInfo
+import com.ttlock.bl.sdk.executor.AppExecutors
+import com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.LogUtil
 import java.lang.Exception
 import java.util.*
 
@@ -32,14 +47,14 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
     private var dataQueue: LinkedList<ByteArray>? = null
     protected var context: Context? = null
     protected var mAppExecutor: AppExecutors
-    protected var handler: android.os.Handler
+    protected var handler: Handler
     protected var firmwareInfo: FirmwareInfo? = null
 
-    //TODO:
+    // TODO:
     private val isInitSuccess = false
     private val noResponseRunable = Runnable {
         noResponseCallback()
-        //todo:回调
+        // todo:回调
 //            KeypadCallback callback = KeypadCallbackManager.getInstance().getCallback();
 //            if (callback != null)
 //                callback.onFail(KeypadError.NO_RESPONSE);
@@ -73,7 +88,7 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
             val address: String = device.getAddress()
             val bleDevice: BluetoothDevice = mBluetoothAdapter.getRemoteDevice(address)
             clear()
-            mBluetoothGatt = bleDevice.connectGatt(context, false, this)
+            mBluetoothGatt = bleDevice.connectGatt(context!!, false, this)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -99,33 +114,33 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
         var len = command.size
         LogUtil.d("send datas:" + DigitUtil.byteArrayToHexString(command), DBG)
         if (dataQueue == null) dataQueue = LinkedList<ByteArray>()
-        dataQueue.clear()
+        dataQueue!!.clear()
         var startPos = 0
         while (len > 0) {
             val ln = Math.min(len, 20)
             val data = ByteArray(ln)
             System.arraycopy(command, startPos, data, 0, ln)
-            dataQueue.add(data)
+            dataQueue!!.add(data)
             len -= 20
             startPos += 20
         }
         if (mWriteCharacteristic != null && mBluetoothGatt != null) {
             try {
                 startResponseTimer()
-                hasRecDataLen = 0 //发送前恢复接收数据的起始位置
-                mWriteCharacteristic.setValue(dataQueue.poll())
-                mBluetoothGatt.writeCharacteristic(mWriteCharacteristic)
+                hasRecDataLen = 0 // 发送前恢复接收数据的起始位置
+                mWriteCharacteristic!!.setValue(dataQueue!!.poll())
+                mBluetoothGatt!!.writeCharacteristic(mWriteCharacteristic!!)
             } catch (e: Exception) {
-                //TODO:
+                // TODO:
             }
         } else {
             LogUtil.d("mBluetoothGatt:$mBluetoothGatt", DBG)
             LogUtil.d("mNotifyCharacteristic or mBluetoothGatt is null", DBG)
-            //TODO:
+            // TODO:
         }
     }
 
-    fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+    override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
         super.onConnectionStateChange(gatt, status, newState)
         if (mBluetoothGatt !== gatt) return
         try {
@@ -139,7 +154,7 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
         } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
             LogUtil.d("STATE_DISCONNECTED")
             disconnectedCallback()
-            //连接失败回调todo:
+            // 连接失败回调todo:
 //            mAppExecutor.mainThread().execute(new Runnable() {
 //                @Override
 //                public void run() {
@@ -156,24 +171,24 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
     }
 
     protected open fun disconnectedCallback() {}
-    fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+    override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
         super.onServicesDiscovered(gatt, status)
         LogUtil.d("")
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            val service: BluetoothGattService = mBluetoothGatt.getService(
+            val service: BluetoothGattService? = mBluetoothGatt!!.getService(
                 UUID.fromString(
                     DEVICE_INFORMATION_SERVICE
                 )
             )
             if (service != null) {
-                val gattCharacteristics: List<BluetoothGattCharacteristic> =
+                val gattCharacteristics: List<BluetoothGattCharacteristic>? =
                     service.getCharacteristics()
-                if (gattCharacteristics != null && gattCharacteristics.size > 0) {
+                if (gattCharacteristics != null && gattCharacteristics.isNotEmpty()) {
                     for (gattCharacteristic in gattCharacteristics) {
                         LogUtil.d(gattCharacteristic.getUuid().toString(), DBG)
                         LogUtil.d("read characteristic:" + Thread.currentThread(), DBG)
                         if (gattCharacteristic.getUuid().toString()
-                                .equals(READ_MODEL_NUMBER_UUID)
+                            .equals(READ_MODEL_NUMBER_UUID)
                         ) {
                             modelNumberCharacteristic = gattCharacteristic
                             //                                gatt.readCharacteristic(gattCharacteristic);
@@ -191,7 +206,7 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
                     }
                 }
             }
-            gatt.readCharacteristic(modelNumberCharacteristic)
+            gatt.readCharacteristic(modelNumberCharacteristic!!)
 
 //            List<BluetoothGattService> services = gatt.getServices();
 //            for (BluetoothGattService service : services) {
@@ -228,7 +243,7 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
         }
     }
 
-    open fun onCharacteristicRead(
+    override fun onCharacteristicRead(
         gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic,
         status: Int
@@ -238,25 +253,25 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
         if (status == BluetoothGatt.GATT_SUCCESS) {
             if (characteristic === modelNumberCharacteristic) {
                 if (firmwareInfo == null) firmwareInfo = FirmwareInfo()
-                firmwareInfo.setModelNum(String(characteristic.getValue()))
-                gatt.readCharacteristic(hardwareRevisionCharacteristic)
+                firmwareInfo!!.setModelNum(String(characteristic.getValue()))
+                gatt.readCharacteristic(hardwareRevisionCharacteristic!!)
             } else if (characteristic === hardwareRevisionCharacteristic) {
-                firmwareInfo.setHardwareRevision(String(characteristic.getValue()))
-                gatt.readCharacteristic(firmwareRevisionCharacteristic)
+                firmwareInfo!!.setHardwareRevision(String(characteristic.getValue()))
+                gatt.readCharacteristic(firmwareRevisionCharacteristic!!)
             } else if (characteristic === firmwareRevisionCharacteristic) {
-                firmwareInfo.setFirmwareRevision(String(characteristic.getValue()))
+                firmwareInfo!!.setFirmwareRevision(String(characteristic.getValue()))
                 LogUtil.d("deviceInfo:$firmwareInfo")
                 service = gatt.getService(UUID.fromString(UUID_SERVICE))
                 if (service != null) {
-                    val gattCharacteristics: List<BluetoothGattCharacteristic> =
-                        service.getCharacteristics()
-                    if (gattCharacteristics != null && gattCharacteristics.size > 0) {
+                    val gattCharacteristics: List<BluetoothGattCharacteristic>? =
+                        service!!.getCharacteristics()
+                    if (gattCharacteristics != null && gattCharacteristics.isNotEmpty()) {
                         for (gattCharacteristic in gattCharacteristics) {
                             LogUtil.d(gattCharacteristic.getUuid().toString(), DBG)
                             if (gattCharacteristic.getUuid().toString().equals(UUID_WRITE)) {
                                 mWriteCharacteristic = gattCharacteristic
                             } else if (gattCharacteristic.getUuid().toString()
-                                    .equals(UUID_NODIFY)
+                                .equals(UUID_NODIFY)
                             ) {
                                 gatt.setCharacteristicNotification(gattCharacteristic, true)
                                 val descriptor: BluetoothGattDescriptor =
@@ -267,21 +282,21 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
                                 if (gatt.writeDescriptor(descriptor)) {
                                     LogUtil.d("writeDescriptor successed", DBG)
                                 } else {
-                                    //TODO:
+                                    // TODO:
                                     LogUtil.d("writeDescriptor failed", DBG)
                                 }
                             }
                         }
                     }
                 } else {
-                    //测试出现的情况 是否再次发现一次
+                    // 测试出现的情况 是否再次发现一次
                     LogUtil.w("service is null", true)
                 }
             }
         }
     }
 
-    fun onCharacteristicWrite(
+    override fun onCharacteristicWrite(
         gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic,
         status: Int
@@ -294,7 +309,7 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
         if (status == BluetoothGatt.GATT_SUCCESS) {
             if (dataQueue.size > 0) {
                 characteristic.setValue(dataQueue.poll())
-                //TODO:写成功再写下一个
+                // TODO:写成功再写下一个
                 gatt.writeCharacteristic(characteristic)
             } else {
             }
@@ -304,7 +319,7 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
         super.onCharacteristicWrite(gatt, characteristic, status)
     }
 
-    fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+    override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
         super.onCharacteristicChanged(gatt, characteristic)
         LogUtil.d("")
         if (mBluetoothGatt !== gatt) return
@@ -316,7 +331,7 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
             LogUtil.d("data:" + DigitUtil.byteArrayToHexString(data))
             val dataLen = data.size
             System.arraycopy(data, 0, recDataBuf, hasRecDataLen, dataLen)
-            if (data[0].toInt() == 0x72 && data[1].toInt() == 0x5b) { //数据开始
+            if (data[0].toInt() == 0x72 && data[1].toInt() == 0x5b) { // 数据开始
                 recDataTotalLen = data[3] + 2 + 1 + 1 + 1
                 LogUtil.d("recDataTotalLen:$recDataTotalLen")
             }
@@ -328,7 +343,7 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            //清零
+            // 清零
             hasRecDataLen = 0
         }
     }

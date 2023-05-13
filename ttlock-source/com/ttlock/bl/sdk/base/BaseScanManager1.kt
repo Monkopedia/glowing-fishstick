@@ -1,6 +1,5 @@
 package com.ttlock.bl.sdk.base
 
-import android.Manifest
 import java.util.ArrayList
 
 /**
@@ -16,15 +15,15 @@ class BaseScanManager {
     private var mBluetoothAdapter: BluetoothAdapter? = null
     private var scanner: BluetoothLeScanner? = null
     private var leScanCallback: ScanCallback? = null
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+
     private fun prepare() {
         if (mBluetoothAdapter == null) mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         if (scanner == null && mBluetoothAdapter != null) {
             scanner = mBluetoothAdapter.getBluetoothLeScanner()
         }
-        if (leScanCallback == null) { //TODO:更换对象
+        if (leScanCallback == null) { // TODO:更换对象
             leScanCallback = object : ScanCallback() {
-                @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH])
+
                 fun onScanResult(callbackType: Int, result: ScanResult) {
                     super.onScanResult(callbackType, result)
                     scanCallback(result)
@@ -46,8 +45,6 @@ class BaseScanManager {
         scanCallback!!.onScan(ttDevice)
     }
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.BLUETOOTH])
     fun startScan(UUID_SERVICE: String?, scanCallback: BaseScanCallback<*>?) {
         this.UUID_SERVICE = UUID_SERVICE
         prepare()
@@ -64,8 +61,6 @@ class BaseScanManager {
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.BLUETOOTH])
     fun stopScan() {
         if (leScanCallback != null && scanner != null) {
             scanner.stopScan(leScanCallback)

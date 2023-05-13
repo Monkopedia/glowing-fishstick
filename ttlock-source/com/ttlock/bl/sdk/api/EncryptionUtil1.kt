@@ -1,7 +1,9 @@
 package com.ttlock.bl.sdk.api
 
-import android.util.Base64
-import java.lang.Exception
+import com.ttlock.bl.sdk.entity.LockData
+import com.ttlock.bl.sdk.util.AESUtil
+import com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.GsonUtil
 import java.util.*
 
 /**
@@ -65,7 +67,7 @@ object EncryptionUtil {
         var lockData = lockData
         var lockDataObj: LockData? = null
         try {
-            var decodeBytes: ByteArray? = Base64.decode(lockData, Base64.DEFAULT)
+            var decodeBytes: ByteArray? = Base64.getDecoder().decode(lockData)
             val macBytes = Arrays.copyOfRange(decodeBytes, decodeBytes!!.size - 6, decodeBytes.size)
             decodeBytes = Arrays.copyOf(decodeBytes, decodeBytes.size - 6)
             var aesKey: String = DigitUtil.getMacByByte(macBytes)

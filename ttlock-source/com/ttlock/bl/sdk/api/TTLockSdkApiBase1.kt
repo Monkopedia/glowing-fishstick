@@ -1,6 +1,9 @@
 package com.ttlock.bl.sdk.api
 
-import android.Manifest
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
+import android.util.Context
+import android.util.Intent
 
 /**
  * Created on  2019/6/14 0014 14:28
@@ -8,21 +11,12 @@ import android.Manifest
  * @author theodore_hu
  */
 internal abstract class TTLockSdkApiBase {
-    @RequiresPermission(Manifest.permission.BLUETOOTH)
+
     fun isBLEEnabled(context: Context): Boolean {
         val manager: BluetoothManager =
             context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        val adapter: BluetoothAdapter = manager.getAdapter()
+        val adapter: BluetoothAdapter? = manager.getAdapter()
         return adapter != null && adapter.isEnabled()
-    }
-
-    @RequiresPermission(Manifest.permission.BLUETOOTH)
-    fun requestBleEnable(activity: Activity) {
-        val mBluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-        if (mBluetoothAdapter != null && !mBluetoothAdapter.isEnabled()) {
-            val enableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-            activity.startActivityForResult(enableIntent, REQUEST_ENABLE_BT)
-        }
     }
 
     abstract fun prepareBTService(context: Context?)

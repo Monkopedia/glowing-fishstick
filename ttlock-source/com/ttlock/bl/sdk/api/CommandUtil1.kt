@@ -1,9 +1,24 @@
 package com.ttlock.bl.sdk.api
 
-import android.text.TextUtils
+import android.util.Log
+import android.util.TextUtils
+import com.ttlock.bl.sdk.api.CommandUtil_V3.FRManage
+import com.ttlock.bl.sdk.constant.APICommand
+import com.ttlock.bl.sdk.constant.AutoLockOperate
 import com.ttlock.bl.sdk.constant.Constant
+import com.ttlock.bl.sdk.constant.DeviceInfoType
+import com.ttlock.bl.sdk.constant.ICOperate
+import com.ttlock.bl.sdk.constant.LockType
+import com.ttlock.bl.sdk.device.WirelessKeypad
 import com.ttlock.bl.sdk.entity.ConnectParam
+import com.ttlock.bl.sdk.entity.IpSetting
+import com.ttlock.bl.sdk.entity.LockVersion
+import com.ttlock.bl.sdk.entity.TransferData
+import com.ttlock.bl.sdk.util.AESUtil
+import com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.LogUtil
 import java.lang.Exception
+import java.util.*
 
 /**
  * Created by Smartlock on 2016/5/27.
@@ -61,28 +76,30 @@ internal object CommandUtil {
     fun A_checkAdmin(transferData: TransferData) {
         val command: Command = Command(transferData.getLockVersion())
         command.setCommand(Command.Companion.COMM_CHECK_ADMIN)
-        var adminPs: String = transferData.getAdminPs()
+        var adminPs: String = transferData.getAdminPs()!!
         var unlockKey: String? = transferData.getUnlockKey()
         if (adminPs.length > 10) {
             adminPs = String(
                 DigitUtil.decodeDefaultPassword(
                     DigitUtil.stringDividerByDotToByteArray(adminPs)
-                )
+                )!!
             )
         }
         if (adminPs.length < 10) {
             adminPs = String.format("%10s", adminPs).replace(" ", "0")
         }
         if (unlockKey != null && unlockKey.length > 10) {
-            unlockKey = String(
-                DigitUtil.decodeDefaultPassword(
-                    DigitUtil.stringDividerByDotToByteArray(unlockKey)
+            unlockKey = DigitUtil.decodeDefaultPassword(
+                DigitUtil.stringDividerByDotToByteArray(unlockKey)
+            )?.let {
+                String(
+                    it
                 )
-            )
+            }
         }
         transferData.setAdminPs(adminPs)
         transferData.setUnlockKey(unlockKey)
-        when (command.lockType) {
+        when (command.getLockType()) {
             LockType.LOCK_TYPE_V2 -> {}
             LockType.LOCK_TYPE_CAR -> CommandUtil_Va.checkAdmin(command, adminPs)
             LockType.LOCK_TYPE_MOBI -> {}
@@ -121,7 +138,7 @@ internal object CommandUtil {
     fun U_checkUserTime(transferData: TransferData) {
         val command: Command = Command(transferData.getLockVersion())
         command.setCommand(Command.Companion.COMM_CHECK_USER_TIME)
-        var unlockKey: String = transferData.getUnlockKey()
+        var unlockKey: String = transferData.getUnlockKey()!!
         var startDate: Long = transferData.getStartDate()
         var endDate: Long = transferData.getEndDate()
         LogUtil.d("startDate:$startDate", DBG)
@@ -130,21 +147,21 @@ internal object CommandUtil {
             unlockKey = String(
                 DigitUtil.decodeDefaultPassword(
                     DigitUtil.stringDividerByDotToByteArray(unlockKey)
-                )
+                )!!
             )
         }
         transferData.setUnlockKey(unlockKey)
-        //永久钥匙
+        // 永久钥匙
         if (startDate == 0L || endDate == 0L) {
             startDate = permanentStartDate
             endDate = permanentEndDate
         }
 
-        //时间戳应该没用了
+        // 时间戳应该没用了
         transferData.setStartDate(startDate)
         transferData.setEndDate(endDate)
 
-        //根据时间偏移量重新计算时间
+        // 根据时间偏移量重新计算时间
         startDate = startDate + transferData.getTimezoneOffSet() - TimeZone.getDefault().getOffset(
             System.currentTimeMillis()
         )
@@ -153,7 +170,7 @@ internal object CommandUtil {
         )
         val sDateStr: String = DigitUtil.formateDateFromLong(startDate, "yyMMddHHmm")
         val eDateStr: String = DigitUtil.formateDateFromLong(endDate, "yyMMddHHmm")
-        when (command.lockType) {
+        when (command.getLockType()) {
             LockType.LOCK_TYPE_V2 -> {}
             LockType.LOCK_TYPE_CAR -> CommandUtil_Va.checkUserTime(command, sDateStr, eDateStr)
             LockType.LOCK_TYPE_MOBI -> {}
@@ -238,7 +255,7 @@ internal object CommandUtil {
                 aesKeyArray
             )
         }
-        //TODO:接后续指令
+        // TODO:接后续指令
         BluetoothImpl.Companion.getInstance().sendCommand(
             command.buildCommand(),
             adminPassword,
@@ -293,7 +310,7 @@ internal object CommandUtil {
         )
     }
 
-    //TODO:
+    // TODO:
     fun A_checkAdmin(
         uid: Int,
         lockVersionString: String?,
@@ -317,7 +334,7 @@ internal object CommandUtil {
             adminPs = String(
                 DigitUtil.decodeDefaultPassword(
                     DigitUtil.stringDividerByDotToByteArray(adminPs)
-                )
+                )!!
             )
         }
         if (adminPs.length < 10) {
@@ -327,10 +344,10 @@ internal object CommandUtil {
             unlockKey = String(
                 DigitUtil.decodeDefaultPassword(
                     DigitUtil.stringDividerByDotToByteArray(unlockKey)
-                )
+                )!!
             )
         }
-        when (command.lockType) {
+        when (command.getLockType()) {
             LockType.LOCK_TYPE_V2 -> {}
             LockType.LOCK_TYPE_CAR -> CommandUtil_Va.checkAdmin(command, adminPs)
             LockType.LOCK_TYPE_MOBI -> {}
@@ -388,7 +405,7 @@ internal object CommandUtil {
             adminPs = String(
                 DigitUtil.decodeDefaultPassword(
                     DigitUtil.stringDividerByDotToByteArray(adminPs)
-                )
+                )!!
             )
         }
         if (adminPs.length < 10) {
@@ -398,10 +415,10 @@ internal object CommandUtil {
             unlockKey = String(
                 DigitUtil.decodeDefaultPassword(
                     DigitUtil.stringDividerByDotToByteArray(unlockKey)
-                )
+                )!!
             )
         }
-        when (command.lockType) {
+        when (command.getLockType()) {
             LockType.LOCK_TYPE_V2 -> {}
             LockType.LOCK_TYPE_CAR -> CommandUtil_Va.checkAdmin(command, adminPs)
             LockType.LOCK_TYPE_MOBI -> {}
@@ -451,16 +468,16 @@ internal object CommandUtil {
             LockType.LOCK_TYPE_V2 -> {}
             LockType.LOCK_TYPE_V2S -> CommandUtil_V2S.setAdminKeyboardPwd(
                 command,
-                adminKeyboardPassword
+                adminKeyboardPassword!!
             )
             LockType.LOCK_TYPE_V2S_PLUS -> CommandUtil_V2S_PLUS.setAdminKeyboardPwd(
                 command,
-                adminKeyboardPassword,
+                adminKeyboardPassword!!,
                 aesKeyArray
             )
             LockType.LOCK_TYPE_V3 -> CommandUtil_V3.setAdminKeyboardPwd(
                 command,
-                adminKeyboardPassword,
+                adminKeyboardPassword!!,
                 aesKeyArray
             )
             else -> {}
@@ -479,13 +496,13 @@ internal object CommandUtil {
         command.setCommand(Command.Companion.COMM_SET_DELETE_PWD)
         when (lockType) {
             LockType.LOCK_TYPE_V2 -> {}
-            LockType.LOCK_TYPE_V2S -> CommandUtil_V2S.setDeletePwd(command, deletePwd)
+            LockType.LOCK_TYPE_V2S -> CommandUtil_V2S.setDeletePwd(command, deletePwd!!)
             LockType.LOCK_TYPE_V2S_PLUS -> CommandUtil_V2S_PLUS.setDeletePwd(
                 command,
-                deletePwd,
+                deletePwd!!,
                 aesKeyArray
             )
-            LockType.LOCK_TYPE_V3 -> CommandUtil_V3.setDeletePwd(command, deletePwd, aesKeyArray)
+            LockType.LOCK_TYPE_V3 -> CommandUtil_V3.setDeletePwd(command, deletePwd!!, aesKeyArray)
         }
         BluetoothImpl.Companion.getInstance().sendCommand(command.buildCommand())
     }
@@ -511,19 +528,19 @@ internal object CommandUtil {
             unlockKey = String(
                 DigitUtil.decodeDefaultPassword(
                     DigitUtil.stringDividerByDotToByteArray(unlockKey)
-                )
+                )!!
             )
         }
-        //永久钥匙
+        // 永久钥匙
         if (startDate == 0L) startDate = permanentStartDate
         if (endDate == 0L) endDate = permanentEndDate
         val sDateStr: String = DigitUtil.formateDateFromLong(startDate, "yyMMddHHmm")
         val eDateStr: String = DigitUtil.formateDateFromLong(endDate, "yyMMddHHmm")
-        when (command.lockType) {
+        when (command.getLockType()) {
             LockType.LOCK_TYPE_V2 -> {}
             LockType.LOCK_TYPE_CAR -> CommandUtil_Va.checkUserTime(command, sDateStr, eDateStr)
             LockType.LOCK_TYPE_MOBI -> {}
-            LockType.LOCK_TYPE_V2S ->                 //TODO:
+            LockType.LOCK_TYPE_V2S -> // TODO:
                 CommandUtil_V2S.checkUserTime(command, sDateStr, eDateStr, lockFlagPos)
             LockType.LOCK_TYPE_V2S_PLUS -> CommandUtil_V2S_PLUS.checkUserTime_V2S_PLUS(
                 command,
@@ -574,31 +591,31 @@ internal object CommandUtil {
                 psFromLockL = java.lang.Long.valueOf(String(psFromLock!!))
                 unlockKeyL = java.lang.Long.valueOf(unlockKey)
                 sum = DigitUtil.getUnlockPassword(psFromLockL, unlockKeyL)
-                //车位锁调用相反的
+                // 车位锁调用相反的
                 command.setCommand(Command.Companion.COMM_LOCK)
                 CommandUtil_Va.up_down(command, sum)
             }
             LockType.LOCK_TYPE_MOBI -> {}
             LockType.LOCK_TYPE_V2S -> {
-                psFromLockL = DigitUtil.fourBytesToLong(psFromLock)
+                psFromLockL = DigitUtil.fourBytesToLong(psFromLock!!)
                 unlockKeyL = java.lang.Long.valueOf(unlockKey)
                 sum = DigitUtil.getUnlockPwd_new(psFromLockL, unlockKeyL)
                 CommandUtil_V2S.unlock(command, sum)
             }
             LockType.LOCK_TYPE_V2S_PLUS -> {
-                psFromLockL = DigitUtil.fourBytesToLong(psFromLock)
+                psFromLockL = DigitUtil.fourBytesToLong(psFromLock!!)
                 unlockKeyL = java.lang.Long.valueOf(unlockKey)
                 sum = DigitUtil.getUnlockPwd_new(psFromLockL, unlockKeyL)
                 CommandUtil_V2S_PLUS.unlock_V2S_PLUS(command, sum, aesKeyArray)
             }
             LockType.LOCK_TYPE_V3, LockType.LOCK_TYPE_V3_CAR -> {
-                psFromLockL = DigitUtil.fourBytesToLong(psFromLock)
+                psFromLockL = DigitUtil.fourBytesToLong(psFromLock!!)
                 unlockKeyL = java.lang.Long.valueOf(unlockKey)
                 sum = DigitUtil.getUnlockPwd_new(psFromLockL, unlockKeyL)
                 CommandUtil_V3.unlock(command, sum, unlockDate, aesKeyArray, timezoneRawOffSet)
             }
         }
-        //TODO:接后续指令
+        // TODO:接后续指令
         BluetoothImpl.Companion.getInstance().sendCommand(command.buildCommand())
     }
 
@@ -611,7 +628,7 @@ internal object CommandUtil {
      */
     fun L_lock(lockType: Int, unlockKey: String?, psFromLock: ByteArray?, aesKeyArray: ByteArray?) {
         val command = Command(lockType)
-        //车位锁进行相反操作
+        // 车位锁进行相反操作
         command.setCommand(Command.Companion.COMM_UNLOCK)
         var psFromLockL: Long = 0
         var unlockKeyL: Long = 0
@@ -625,7 +642,7 @@ internal object CommandUtil {
             }
             LockType.LOCK_TYPE_MOBI -> {}
         }
-        //TODO:接后续指令
+        // TODO:接后续指令
         BluetoothImpl.Companion.getInstance().sendCommand(command.buildCommand())
     }
 
@@ -637,7 +654,7 @@ internal object CommandUtil {
     ) {
         val command = Command(lockType)
         command.setCommand(Command.Companion.COMM_CHECK_RANDOM)
-        val psFromLockL: Long = DigitUtil.fourBytesToLong(psFromLock)
+        val psFromLockL: Long = DigitUtil.fourBytesToLong(psFromLock!!)
         val unlockKeyL = java.lang.Long.valueOf(unlockKey)
         val sum: String = DigitUtil.getUnlockPwd_new(psFromLockL, unlockKeyL)
         CommandUtil_V3.checkRandom(command, sum, aesKeyArray)
@@ -665,12 +682,12 @@ internal object CommandUtil {
         lockType: Int,
         date: Long,
         timezoneRawOffSet: Long,
-        aesKeyArray: ByteArray?
+        aesKeyArray: ByteArray
     ) {
         var date = date
         val command = Command(lockType)
         command.setCommand(Command.Companion.COMM_TIME_CALIBRATE)
-        //根据时区来重新计算时间
+        // 根据时区来重新计算时间
         date =
             date + timezoneRawOffSet - TimeZone.getDefault().getOffset(System.currentTimeMillis())
         LogUtil.d("timezoneRawOffSet:$timezoneRawOffSet", DBG)
@@ -678,7 +695,8 @@ internal object CommandUtil {
             "TimeZone.getDefault().getOffset(System.currentTimeMillis()):" + TimeZone.getDefault()
                 .getOffset(
                     System.currentTimeMillis()
-                ), DBG
+                ),
+            DBG
         )
         LogUtil.d("date:$date", DBG)
         val timeStr: String = DigitUtil.formateDateFromLong(date, "yyMMddHHmmss")
@@ -721,7 +739,7 @@ internal object CommandUtil {
 
     fun AT_setLockname(lockType: Int, lockname: String, aesKeyArray: ByteArray?) {
         val command = Command(lockType)
-        command.setCommand(0xFF.toByte()) //AT指令
+        command.setCommand(0xFF.toByte()) // AT指令
         command.setData("AT+NAME=$lockname".toByteArray(), aesKeyArray)
         //        CommandUtil_V3.setLockname(command, lockname, aesKeyArray);
         BluetoothImpl.Companion.getInstance().sendCommand(command.buildCommand())
@@ -794,11 +812,11 @@ internal object CommandUtil {
     @Deprecated("")
     fun getOperateLog(lockVersion: String?, aesKeyArray: ByteArray?) {
         val command = Command(lockVersion)
-        when (command.lockType) {
+        when (command.getLockType()) {
             LockType.LOCK_TYPE_CAR -> command.setCommand(Command.Companion.COMM_GET_ALARM_ERRCORD_OR_OPERATION_FINISHED)
             LockType.LOCK_TYPE_V3, LockType.LOCK_TYPE_V3_CAR -> {
                 command.setCommand(Command.Companion.COMM_GET_OPERATE_LOG)
-                //初始请求序列设置的默认值
+                // 初始请求序列设置的默认值
                 CommandUtil_V3.getOperateLog(command, 0xffff.toShort(), aesKeyArray)
             }
             else -> {}
@@ -814,11 +832,11 @@ internal object CommandUtil {
     fun getOperateLog(transferData: TransferData) {
         Log.d("OMG", "=getOperateLog=")
         val command: Command = Command(transferData.getLockVersion())
-        when (command.lockType) {
+        when (command.getLockType()) {
             LockType.LOCK_TYPE_CAR -> command.setCommand(Command.Companion.COMM_GET_ALARM_ERRCORD_OR_OPERATION_FINISHED)
             LockType.LOCK_TYPE_V3, LockType.LOCK_TYPE_V3_CAR -> {
                 command.setCommand(Command.Companion.COMM_GET_OPERATE_LOG)
-                //初始请求序列设置的默认值
+                // 初始请求序列设置的默认值
                 CommandUtil_V3.getOperateLog(
                     command,
                     transferData.getSeq(),
@@ -931,8 +949,8 @@ internal object CommandUtil {
             pwdOperateType,
             keyboardPwdType,
             circleType,
-            originalPwd,
-            newPwd,
+            originalPwd!!,
+            newPwd!!,
             startDate,
             endDate,
             defaultAesKeyArray,
@@ -945,8 +963,8 @@ internal object CommandUtil {
         val timestampStr = String.format("%-16d", timestamp).replace(" ", "0").substring(0, 16)
         LogUtil.d("$pwdInfoSource $timestampStr", DBG)
         val encryRes: ByteArray =
-            AESUtil.aesEncrypt(pwdInfoSource.toByteArray(), timestampStr.toByteArray())
-        return Base64.encodeToString(encryRes, Base64.NO_WRAP)
+            AESUtil.aesEncrypt(pwdInfoSource.toByteArray(), timestampStr.toByteArray())!!
+        return Base64.getEncoder().encodeToString(encryRes)
     }
 
     /**
@@ -1097,7 +1115,7 @@ internal object CommandUtil {
     fun setWristbandKey(lockType: Int, wristKey: String?, aesKeyArray: ByteArray?) {
         val command = Command(lockType)
         command.setCommand(Command.Companion.COMM_SET_WRIST_BAND_KEY)
-        CommandUtil_V3.setWristKey(command, wristKey, aesKeyArray)
+        CommandUtil_V3.setWristKey(command, wristKey!!, aesKeyArray)
         BluetoothImpl.Companion.getInstance().sendCommand(command.buildCommand())
     }
 
@@ -1245,7 +1263,7 @@ internal object CommandUtil {
         val command: Command = Command(transferData.getLockVersion())
         command.setCommand(Command.Companion.COMM_READ_DEVICE_INFO)
         command.setData(byteArrayOf(DeviceInfoType.MODEL_NUMBER), transferData.getAesKeyArray())
-        //TODO:暂时这样存
+        // TODO:暂时这样存
         transferData.setTransferData(command.buildCommand())
         BluetoothImpl.Companion.getInstance().sendCommand(transferData)
     }
@@ -1306,7 +1324,7 @@ internal object CommandUtil {
         var psFromLockL: Long = 0
         var unlockKeyL: Long = 0
         var sum: String? = null
-        psFromLockL = DigitUtil.fourBytesToLong(psFromLock)
+        psFromLockL = DigitUtil.fourBytesToLong(psFromLock!!)
         unlockKeyL = java.lang.Long.valueOf(unlockKey)
         sum = DigitUtil.getUnlockPwd_new(psFromLockL, unlockKeyL)
         CommandUtil_V3.lock(command, sum, unlockDate, aesKeyArray)
@@ -1349,9 +1367,9 @@ internal object CommandUtil {
         val command: Command = Command(transferData.getLockVersion())
         command.setCommand(Command.Companion.COMM_ACCESSORY_BATTERY)
         val values = ByteArray(1 + 6)
-        values[0] = transferData.getAccessoryInfo().getAccessoryType().getValue()
+        values[0] = transferData.getAccessoryInfo()!!.getAccessoryType()!!.getValue()
         val mac: ByteArray =
-            DigitUtil.getReverseMacArray(transferData.getAccessoryInfo().getAccessoryMac())
+            DigitUtil.getReverseMacArray(transferData.getAccessoryInfo()!!.getAccessoryMac()!!)!!
         System.arraycopy(mac, 0, values, 1, 6)
         command.setData(values, transferData.getAesKeyArray())
         transferData.setTransferData(command.buildCommand())
@@ -1361,18 +1379,18 @@ internal object CommandUtil {
 
     fun setLock(param: ConnectParam, keypad: WirelessKeypad) {
         val command = WirelessKeyboardCommand(WirelessKeyboardCommand.Companion.COMM_SET_LOCK)
-        command.mac = keypad.getAddress()
+        command.setMac(keypad.getAddress())
         val data = ByteArray(6 + 16)
 
-        //低在前高在后
-        var macArr: Array<String?> = param.lockmac.split(":").toTypedArray()
-        macArr = command.reverseArray(macArr)
-        val lockmacBytes: ByteArray = command.hexStringArrToByteArr(macArr)
+        // 低在前高在后
+        var macArr: Array<String?> = param.getLockmac()!!.split(":").toTypedArray()
+        macArr = command.reverseArray(macArr)!!
+        val lockmacBytes: ByteArray = command.hexStringArrToByteArr(macArr)!!
         System.arraycopy(lockmacBytes, 0, data, 0, 6)
         val baseAesKey = ByteArray(6)
-        macArr = keypad.getAddress().split(":").toTypedArray()
-        macArr = command.reverseArray(macArr)
-        val keypadMacBytes: ByteArray = command.hexStringArrToByteArr(macArr)
+        macArr = keypad.getAddress()!!.split(":").toTypedArray()
+        macArr = command.reverseArray(macArr)!!
+        val keypadMacBytes: ByteArray = command.hexStringArrToByteArr(macArr)!!
         System.arraycopy(keypadMacBytes, 0, baseAesKey, 0, 6)
         //        System.arraycopy(param.getFactoryDate().getBytes(), 0, baseAesKey, 6, 8);
         val defaultAesKey = byteArrayOf(
@@ -1393,7 +1411,7 @@ internal object CommandUtil {
             0xE3.toByte(),
             0x67
         )
-        val encryAesKey: ByteArray = AESUtil.aesEncrypt(baseAesKey, defaultAesKey)
+        val encryAesKey: ByteArray = AESUtil.aesEncrypt(baseAesKey, defaultAesKey)!!
         System.arraycopy(encryAesKey, 0, data, 6, 16)
         command.setData(data)
         GattCallbackHelper.Companion.getInstance().sendCommand(command.buildCommand())
@@ -1401,7 +1419,7 @@ internal object CommandUtil {
 
     fun readDeviceFeature(keypad: WirelessKeypad) {
         val command = WirelessKeyboardCommand(WirelessKeyboardCommand.Companion.COMM_READ_FEATURE)
-        command.mac = keypad.getAddress()
+        command.setMac( keypad.getAddress())
         GattCallbackHelper.Companion.getInstance().sendCommand(command.buildCommand())
     }
 
@@ -1410,7 +1428,7 @@ internal object CommandUtil {
      * @param transferData
      */
     fun scanWifi(transferData: TransferData) {
-        //扫描wifi前清空之前的数据
+        // 扫描wifi前清空之前的数据
         BluetoothImpl.Companion.getInstance().clearWifi()
         val command: Command = Command(LockType.LOCK_TYPE_V3)
         command.setCommand(Command.Companion.COMM_SCAN_WIFI)
@@ -1426,19 +1444,19 @@ internal object CommandUtil {
             if (TextUtils.isEmpty(transferData.getWifiPassword())) {
                 transferData.setWifiPassword("")
             }
-            val wifiNameBytes: ByteArray = transferData.getWifiName().toByteArray(charset("UTF-8"))
+            val wifiNameBytes: ByteArray = transferData.getWifiName()!!.toByteArray(charset("UTF-8"))
             val wifiNameBytesLength = wifiNameBytes.size.toByte()
             val values =
-                ByteArray(1 + wifiNameBytesLength + 1 + transferData.getWifiPassword().length)
+                ByteArray(1 + wifiNameBytesLength + 1 + transferData.getWifiPassword()!!.length)
             values[0] = wifiNameBytesLength
             System.arraycopy(wifiNameBytes, 0, values, 1, wifiNameBytesLength.toInt())
-            values[1 + wifiNameBytesLength] = transferData.getWifiPassword().length.toByte()
+            values[1 + wifiNameBytesLength] = transferData.getWifiPassword()!!.length.toByte()
             System.arraycopy(
-                transferData.getWifiPassword().toByteArray(),
+                transferData.getWifiPassword()!!.toByteArray(),
                 0,
                 values,
                 1 + wifiNameBytesLength + 1,
-                transferData.getWifiPassword().length
+                transferData.getWifiPassword()!!.length
             )
             command.setData(values, transferData.getAesKeyArray())
             transferData.setTransferData(command.buildCommand())
@@ -1497,29 +1515,29 @@ internal object CommandUtil {
         val values = ByteArray(1 + 4 + 4 + 4 + 4 + 4)
         values[0] = wifiLockNetworkConfiguration.getType().toByte()
         if (values[0].toInt() == IpSetting.Companion.STATIC_IP) {
-            val ip: String = wifiLockNetworkConfiguration.getIpAddress()
+            val ip: String = wifiLockNetworkConfiguration.getIpAddress()!!
             if (!TextUtils.isEmpty(ip)) {
-                val ipByteArr: ByteArray = DigitUtil.convertIp2Bytes(ip)
+                val ipByteArr: ByteArray = DigitUtil.convertIp2Bytes(ip)!!
                 System.arraycopy(ipByteArr, 0, values, 1, 4)
             }
-            val subMask: String = wifiLockNetworkConfiguration.getSubnetMask()
+            val subMask: String = wifiLockNetworkConfiguration.getSubnetMask()!!
             if (!TextUtils.isEmpty(subMask)) {
-                val submaskByteArr: ByteArray = DigitUtil.convertIp2Bytes(subMask)
+                val submaskByteArr: ByteArray = DigitUtil.convertIp2Bytes(subMask)!!
                 System.arraycopy(submaskByteArr, 0, values, 5, 4)
             }
-            val router: String = wifiLockNetworkConfiguration.getRouter()
+            val router: String = wifiLockNetworkConfiguration.getRouter()!!
             if (!TextUtils.isEmpty(router)) {
-                val routerByteArr: ByteArray = DigitUtil.convertIp2Bytes(router)
+                val routerByteArr: ByteArray = DigitUtil.convertIp2Bytes(router)!!
                 System.arraycopy(routerByteArr, 0, values, 9, 4)
             }
-            val dns1: String = wifiLockNetworkConfiguration.getPreferredDns()
+            val dns1: String = wifiLockNetworkConfiguration.getPreferredDns()!!
             if (!TextUtils.isEmpty(dns1)) {
-                val dns1ByteArr: ByteArray = DigitUtil.convertIp2Bytes(dns1)
+                val dns1ByteArr: ByteArray = DigitUtil.convertIp2Bytes(dns1)!!
                 System.arraycopy(dns1ByteArr, 0, values, 13, 4)
             }
-            val dns2: String = wifiLockNetworkConfiguration.getAlternateDns()
+            val dns2: String = wifiLockNetworkConfiguration.getAlternateDns()!!
             if (!TextUtils.isEmpty(dns2)) {
-                val dns2ByteArr: ByteArray = DigitUtil.convertIp2Bytes(dns2)
+                val dns2ByteArr: ByteArray = DigitUtil.convertIp2Bytes(dns2)!!
                 System.arraycopy(dns2ByteArr, 0, values, 17, 4)
             }
         }

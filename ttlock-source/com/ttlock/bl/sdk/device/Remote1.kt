@@ -1,7 +1,5 @@
 package com.ttlock.bl.sdk.device
 
-import android.Manifest
-
 /**
  * Created by TTLock on 2019/5/16.
  */
@@ -13,8 +11,6 @@ class Remote : TTDevice {
      */
     private var date = System.currentTimeMillis()
 
-    @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH])
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     constructor(scanResult: ScanResult) {
         device = scanResult.getDevice()
         scanRecord = scanResult.getScanRecord().getBytes()
@@ -31,7 +27,7 @@ class Remote : TTDevice {
     override fun initial() {
         val scanRecordLength = scanRecord.size
         var index = 0
-        //TODO:越界
+        // TODO:越界
         while (index < scanRecordLength) {
             val len = scanRecord[index].toInt()
             if (len == 0) break
@@ -48,12 +44,12 @@ class Remote : TTDevice {
                     var offset = 2
                     val protocolType = scanRecord[index + offset++]
                     val protocolVersion = scanRecord[index + offset++]
-                    if (protocolType.toInt() == 0x05 && protocolVersion.toInt() == 0x03) { //三代协议
+                    if (protocolType.toInt() == 0x05 && protocolVersion.toInt() == 0x03) { // 三代协议
                         scene = scanRecord[index + offset++]
                     }
                     isSettingMode = if (scanRecord[index + offset] and 0x04 == 0) false else true
 
-                    //电量偏移量
+                    // 电量偏移量
                     offset++
                     batteryCapacity = scanRecord[index + offset].toInt()
                 }

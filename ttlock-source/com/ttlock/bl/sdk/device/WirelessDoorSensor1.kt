@@ -1,7 +1,5 @@
 package com.ttlock.bl.sdk.device
 
-import android.Manifest
-
 /**
  * Created by TTLock on 2019/5/16.
  */
@@ -13,21 +11,17 @@ class WirelessDoorSensor : TTDevice {
      */
     private var date = System.currentTimeMillis()
 
-    @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH])
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     constructor(scanResult: ScanResult?) : super(scanResult) {
         initial()
     }
 
-    @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH])
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     constructor(device: BluetoothDevice?) : super(device) {
     }
 
     override fun initial() {
         val scanRecordLength = scanRecord.size
         var index = 0
-        //TODO:越界
+        // TODO:越界
         while (index < scanRecordLength) {
             val len = scanRecord[index].toInt()
             if (len == 0) {
@@ -46,13 +40,13 @@ class WirelessDoorSensor : TTDevice {
                     var offset = 2
                     val protocolType = scanRecord[index + offset++]
                     val protocolVersion = scanRecord[index + offset++]
-                    if (protocolType.toInt() == 0x05 && protocolVersion.toInt() == 0x03) { //三代协议
+                    if (protocolType.toInt() == 0x05 && protocolVersion.toInt() == 0x03) { // 三代协议
                         scene = scanRecord[index + offset++]
                     }
-                    isSettingMode = true //门磁扫描到就是可添加
+                    isSettingMode = true // 门磁扫描到就是可添加
                     //                    isSettingMode = (scanRecord[index + offset] & 0x04) == 0 ? false : true;
 
-                    //电量偏移量
+                    // 电量偏移量
                     offset++
                     batteryCapacity = scanRecord[index + offset].toInt()
                 }

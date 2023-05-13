@@ -1,9 +1,27 @@
 package com.ttlock.bl.sdk.api
 
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCallback
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
+import android.bluetooth.BluetoothGattService
+import android.bluetooth.BluetoothProfile
 import com.ttlock.bl.sdk.callback.ConnectCallback
 import java.lang.Exception
 import java.util.*
+
+import android.util.Context
+import android.util.Handler
+import android.util.Looper
+import com.ttlock.bl.sdk.callback.InitKeypadCallback
+import com.ttlock.bl.sdk.callback.LockCallback
+import com.ttlock.bl.sdk.device.WirelessKeypad
+import com.ttlock.bl.sdk.entity.LockError
+import com.ttlock.bl.sdk.executor.AppExecutors
+import com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.LogUtil
 
 /**
  * Created by TTLock on 2019/3/11.
@@ -13,7 +31,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
     private val modelNumberCharacteristic: BluetoothGattCharacteristic? = null
     private val hardwareRevisionCharacteristic: BluetoothGattCharacteristic? = null
     private val firmwareRevisionCharacteristic: BluetoothGattCharacteristic? = null
-    private var mBluetoothAdapter: BluetoothAdapter? = null
+    private lateinit var mBluetoothAdapter: BluetoothAdapter
     private var mBluetoothGatt: BluetoothGatt? = null
     private var mWriteCharacteristic: BluetoothGattCharacteristic? = null
     private var device: WirelessKeypad? = null
@@ -33,12 +51,12 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
     private var dataQueue: LinkedList<ByteArray>? = null
     private var context: Context? = null
     private val mAppExecutor: AppExecutors
-    private val handler: android.os.Handler
+    private val handler: Handler
 
-    //TODO:
+    // TODO:
     private var isInitSuccess = false
     private val noResponseRunable = Runnable {
-        val callback: LockCallback = LockCallbackManager.Companion.getInstance().getCallback()
+        val callback: LockCallback? = LockCallbackManager.Companion.getInstance().getCallback()
         if (callback != null) {
             callback.onFail(LockError.WIRELESS_KEYBOARD_NO_RESPONSE)
         }
@@ -56,12 +74,12 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
     }
 
-    fun connect(extendedBluetoothDevice: WirelessKeypad?) {
+    fun connect(extendedBluetoothDevice: WirelessKeypad) {
         device = extendedBluetoothDevice
-        val address: String = device.getAddress()
+        val address: String = device!!.getAddress()!!
         val bleDevice: BluetoothDevice = mBluetoothAdapter.getRemoteDevice(address)
         clear()
-        mBluetoothGatt = bleDevice.connectGatt(context, false, this)
+        mBluetoothGatt = bleDevice.connectGatt(context!!, false, this)
     }
 
     fun getDevice(): WirelessKeypad? {
@@ -84,33 +102,33 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         var len = command.size
         LogUtil.d("send datas:" + DigitUtil.byteArrayToHexString(command), DBG)
         if (dataQueue == null) dataQueue = LinkedList<ByteArray>()
-        dataQueue.clear()
+        dataQueue!!.clear()
         var startPos = 0
         while (len > 0) {
             val ln = Math.min(len, 20)
             val data = ByteArray(ln)
             System.arraycopy(command, startPos, data, 0, ln)
-            dataQueue.add(data)
+            dataQueue!!.add(data)
             len -= 20
             startPos += 20
         }
         if (mWriteCharacteristic != null && mBluetoothGatt != null) {
             try {
                 startResponseTimer()
-                hasRecDataLen = 0 //发送前恢复接收数据的起始位置
-                mWriteCharacteristic.setValue(dataQueue.poll())
-                mBluetoothGatt.writeCharacteristic(mWriteCharacteristic)
+                hasRecDataLen = 0 // 发送前恢复接收数据的起始位置
+                mWriteCharacteristic!!.setValue(dataQueue!!.poll())
+                mBluetoothGatt!!.writeCharacteristic(mWriteCharacteristic!!)
             } catch (e: Exception) {
-                //TODO:
+                // TODO:
             }
         } else {
             LogUtil.d("mBluetoothGatt:$mBluetoothGatt", DBG)
             LogUtil.d("mNotifyCharacteristic or mBluetoothGatt is null", DBG)
-            //TODO:
+            // TODO:
         }
     }
 
-    fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+    override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
         super.onConnectionStateChange(gatt, status, newState)
         if (mBluetoothGatt !== gatt) return
         try {
@@ -123,19 +141,21 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
             LogUtil.d("Attempting to start service discovery:" + gatt.discoverServices())
         } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
             LogUtil.d("STATE_DISCONNECTED")
-            mAppExecutor.mainThread().execute(Runnable {
-                val mConnectCallback: ConnectCallback =
-                    LockCallbackManager.Companion.getInstance().getConnectCallback()
-                if (mConnectCallback != null) {
-                    mConnectCallback.onFail(LockError.DEVICE_CONNECT_FAILED)
+            mAppExecutor.mainThread().execute(
+                Runnable {
+                    val mConnectCallback: ConnectCallback? =
+                        LockCallbackManager.Companion.getInstance().getConnectCallback()
+                    if (mConnectCallback != null) {
+                        mConnectCallback.onFail(LockError.DEVICE_CONNECT_FAILED)
+                    }
+                    isInitSuccess = false
                 }
-                isInitSuccess = false
-            })
+            )
             clear()
         }
     }
 
-    fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+    override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
         super.onServicesDiscovered(gatt, status)
         LogUtil.d("")
         if (status == BluetoothGatt.GATT_SUCCESS) {
@@ -145,9 +165,9 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
             }
             service = gatt.getService(UUID.fromString(UUID_SERVICE))
             if (service != null) {
-                val gattCharacteristics: List<BluetoothGattCharacteristic> =
-                    service.getCharacteristics()
-                if (gattCharacteristics != null && gattCharacteristics.size > 0) {
+                val gattCharacteristics: List<BluetoothGattCharacteristic>? =
+                    service!!.getCharacteristics()
+                if (gattCharacteristics != null && gattCharacteristics.isNotEmpty()) {
                     for (gattCharacteristic in gattCharacteristics) {
                         LogUtil.d(gattCharacteristic.getUuid().toString(), DBG)
                         if (gattCharacteristic.getUuid().toString().equals(UUID_WRITE)) {
@@ -162,14 +182,14 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
                             if (gatt.writeDescriptor(descriptor)) {
                                 LogUtil.d("writeDescriptor successed", DBG)
                             } else {
-                                //TODO:
+                                // TODO:
                                 LogUtil.d("writeDescriptor failed", DBG)
                             }
                         }
                     }
                 }
             } else {
-                //测试出现的情况 是否再次发现一次
+                // 测试出现的情况 是否再次发现一次
                 LogUtil.w("service is null", true)
             }
         } else {
@@ -177,7 +197,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         }
     }
 
-    fun onCharacteristicRead(
+    override fun onCharacteristicRead(
         gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic,
         status: Int
@@ -186,7 +206,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         LogUtil.d("gatt=$gatt characteristic=$characteristic status=$status", DBG)
     }
 
-    fun onCharacteristicWrite(
+    override fun onCharacteristicWrite(
         gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic,
         status: Int
@@ -197,9 +217,9 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         }
         LogUtil.d("gatt=$gatt characteristic=$characteristic status=$status", DBG)
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            if (dataQueue.size > 0) {
-                characteristic.setValue(dataQueue.poll())
-                //TODO:写成功再写下一个
+            if (dataQueue!!.size > 0) {
+                characteristic.setValue(dataQueue!!.poll())
+                // TODO:写成功再写下一个
                 gatt.writeCharacteristic(characteristic)
             } else {
             }
@@ -209,7 +229,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         super.onCharacteristicWrite(gatt, characteristic, status)
     }
 
-    fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+    override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
         super.onCharacteristicChanged(gatt, characteristic)
         LogUtil.d("")
         if (mBluetoothGatt !== gatt) return
@@ -221,7 +241,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
             LogUtil.d("data:" + DigitUtil.byteArrayToHexString(data))
             val dataLen = data.size
             System.arraycopy(data, 0, recDataBuf, hasRecDataLen, dataLen)
-            if (data[0].toInt() == 0x72 && data[1].toInt() == 0x5b) { //数据开始
+            if (data[0].toInt() == 0x72 && data[1].toInt() == 0x5b) { // 数据开始
                 recDataTotalLen = data[3] + 2 + 1 + 1 + 1
                 LogUtil.d("recDataTotalLen:$recDataTotalLen")
             }
@@ -233,81 +253,81 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            //清零
+            // 清零
             hasRecDataLen = 0
         }
     }
 
-    fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor?, status: Int) {
+    override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
         super.onDescriptorWrite(gatt, descriptor, status)
         if (mBluetoothGatt !== gatt) return
         LogUtil.d("")
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            mAppExecutor.mainThread().execute(Runnable {
-                val mConnectCallback: ConnectCallback =
-                    LockCallbackManager.Companion.getInstance().getConnectCallback()
-                if (mConnectCallback != null) {
-                    mConnectCallback.onConnectSuccess(device)
+            mAppExecutor.mainThread().execute(
+                Runnable {
+                    val mConnectCallback: ConnectCallback? =
+                        LockCallbackManager.Companion.getInstance().getConnectCallback()
+                    if (mConnectCallback != null) {
+                        mConnectCallback.onConnectSuccess(device!!)
+                    }
                 }
-            })
+            )
         } else {
-            //TODO:
+            // TODO:
         }
     }
 
     private fun doWithData(values: ByteArray) {
-        mAppExecutor.mainThread().execute(Runnable {
-            LogUtil.d("values:" + DigitUtil.byteArrayToHexString(values))
-            val command = WirelessKeyboardCommand(values)
-            command.mac = device.getAddress()
-            val data = command.getData()
-            LogUtil.d("command:" + DigitUtil.byteToHex(command.getCommand()))
-            LogUtil.d("data:" + DigitUtil.byteArrayToHexString(data))
-            if (data == null) {
-                LogUtil.d("data is null")
-                return@Runnable
-            }
-            if (data[1].toInt() == 1) {
-                when (data[0]) {
-                    WirelessKeyboardCommand.Companion.COMM_SET_LOCK -> CommandUtil.readDeviceFeature(
-                        device
-                    )
-                    WirelessKeyboardCommand.Companion.COMM_READ_FEATURE -> {
-                        val feature: Int =
-                            DigitUtil.fourBytesToLong(Arrays.copyOfRange(data, 3, data.size))
-                                .toInt()
-                        LogUtil.d("feature:$feature")
-                        val callback: LockCallback =
-                            LockCallbackManager.Companion.getInstance().getCallback()
-                        if (callback != null) {
-                            (callback as InitKeypadCallback).onInitKeypadSuccess(feature)
+        mAppExecutor.mainThread().execute(
+            Runnable {
+                LogUtil.d("values:" + DigitUtil.byteArrayToHexString(values))
+                val command = WirelessKeyboardCommand(values)
+                command.setMac( device!!.getAddress())
+                val data = command.getData()
+                LogUtil.d("command:" + DigitUtil.byteToHex(command.getCommand()))
+                LogUtil.d("data:" + DigitUtil.byteArrayToHexString(data))
+                if (data == null) {
+                    LogUtil.d("data is null")
+                    return@Runnable
+                }
+                if (data[1].toInt() == 1) {
+                    when (data[0]) {
+                        WirelessKeyboardCommand.Companion.COMM_SET_LOCK -> CommandUtil.readDeviceFeature(
+                            device!!
+                        )
+                        WirelessKeyboardCommand.Companion.COMM_READ_FEATURE -> {
+                            val feature: Int =
+                                DigitUtil.fourBytesToLong(Arrays.copyOfRange(data, 3, data.size))
+                                    .toInt()
+                            LogUtil.d("feature:$feature")
+                            val callback: LockCallback? =
+                                LockCallbackManager.Companion.getInstance().getCallback()
+                            if (callback != null) {
+                                (callback as InitKeypadCallback).onInitKeypadSuccess(feature)
+                            }
+                            // 成功之后主动断开连接
+                            disconnect()
                         }
-                        //成功之后主动断开连接
-                        disconnect()
+                        else -> {}
                     }
-                    else -> {}
-                }
-            } else {
-                val callback: LockCallback =
-                    LockCallbackManager.Companion.getInstance().getCallback()
-                if (callback != null) {
-                    callback.onFail(LockError.INIT_WIRELESS_KEYBOARD_FAILED)
+                } else {
+                    val callback: LockCallback? =
+                        LockCallbackManager.Companion.getInstance().getCallback()
+                    if (callback != null) {
+                        callback.onFail(LockError.INIT_WIRELESS_KEYBOARD_FAILED)
+                    }
                 }
             }
-        })
+        )
     }
 
     private fun close() {
-        if (mBluetoothGatt != null) {
-            mBluetoothGatt.close()
+            mBluetoothGatt?.close()
             mBluetoothGatt = null
-        }
     }
 
     private fun disconnect() {
-        if (mBluetoothGatt != null) {
-            mBluetoothGatt.disconnect()
-        }
+            mBluetoothGatt?.disconnect()
     }
 
     fun clear() {

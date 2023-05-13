@@ -1,6 +1,5 @@
 package com.ttlock.bl.sdk.wirelessdoorsensor
 
-import android.Manifest
 import com.ttlock.bl.sdk.wirelessdoorsensor.command.CommandUtil
 
 /**
@@ -8,17 +7,15 @@ import com.ttlock.bl.sdk.wirelessdoorsensor.command.CommandUtil
  */
 internal class WirelessDoorSensorSDKApi : BaseSDKApi() {
     override fun prepareBTService(context: Context?) {
-        //TODO:
+        // TODO:
 //        GattCallbackHelper.getInstance().prepare(context);
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH_ADMIN)
     fun startScan(callback: ScanWirelessDoorSensorCallback?) {
         BaseScanManager.Companion.getInstance()
             .startScan(BleConstant.UUID_SERVICE_Door_Sensor, callback)
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH_ADMIN)
     fun stopScan() {
         BaseScanManager.Companion.getInstance().stopScan()
     }

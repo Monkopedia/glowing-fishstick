@@ -1,32 +1,34 @@
 package com.ttlock.bl.sdk.api
 
-import com.google.gson.Gson
-import java.lang.Exception
+import android.util.Gson
+import com.scaf.android.client.CodecUtils
+import com.ttlock.bl.sdk.constant.LockType
+import com.ttlock.bl.sdk.entity.LockVersion
+import com.ttlock.bl.sdk.util.AESUtil
+import com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.LogUtil
 
 /**
  * Created by Smartlock on 2016/5/27.
  */
 class Command {
-    var header // 帧首 		2 字节
-            : ByteArray
-    var protocol_type // 预留	 	1 字节 //reserved 修改为protocol_type
-            : Byte
-    var command // 命令字 	1 字节
-            : Byte = 0
-    var encrypt // 加密字		1 字节
-            : Byte = 0
-    var length // 长度		1 字节
-            : Byte = 0
-    var data // 数据
-            : ByteArray?
-    var checksum // 校验		1 字节
-            : Byte = 0
+    var header: ByteArray
+    var protocol_type: Byte
+    var command: Byte = // 命令字 	1 字节
+        0
+    var encrypt: Byte = // 加密字		1 字节
+        0
+    var length: Byte = // 长度		1 字节
+        0
+    var data: ByteArray? = null
+    var checksum: Byte = // 校验		1 字节
+        0
 
     // V4版本新加
     private var sub_version: Byte = 0
     private var scene: Byte = 0
-    var organization: ByteArray
-    var sub_organization: ByteArray
+    var organization: ByteArray? = null
+    var sub_organization: ByteArray? = null
     private var mIsChecksumValid = false
 
     /**
@@ -77,7 +79,7 @@ class Command {
     }
 
     constructor(lockType: Int) {
-        val lockVersion: LockVersion = LockVersion.Companion.getLockVersion(lockType)
+        val lockVersion: LockVersion = LockVersion.Companion.getLockVersion(lockType)!!
         header = ByteArray(2)
         header[0] = 0x7F
         header[1] = 0x5A
@@ -104,15 +106,11 @@ class Command {
         header[1] = command[1]
         protocol_type = command[2]
         try {
-            if (protocol_type >= 5) { //新协议
-                organization = ByteArray(2)
-                sub_organization = ByteArray(2)
+            if (protocol_type >= 5) { // 新协议
                 sub_version = command[3]
                 scene = command[4]
-                organization[0] = command[5]
-                organization[1] = command[6]
-                sub_organization[0] = command[7]
-                sub_organization[1] = command[8]
+                organization = byteArrayOf(command[5], command[6])
+                sub_organization = byteArrayOf(command[7], command[8])
                 this.command = command[9]
                 encrypt = command[10]
                 length = command[11]
@@ -160,15 +158,11 @@ class Command {
     }
 
     fun getData(): ByteArray {
-        val values: ByteArray
-        values = CodecUtils.decodeWithEncrypt(data, encrypt)
-        return values
+        return CodecUtils.decodeWithEncrypt(data, encrypt)!!
     }
 
     fun getData(aesKeyArray: ByteArray?): ByteArray {
-        val values: ByteArray
-        values = AESUtil.aesDecrypt(data, aesKeyArray)
-        return values
+        return AESUtil.aesDecrypt(data, aesKeyArray)!!
     }
 
     fun setData(data: ByteArray?, aesKeyArray: ByteArray?) {
@@ -195,8 +189,8 @@ class Command {
     }
 
     fun getLockVersion(): LockVersion {
-        val org: Short = DigitUtil.byteArrayToShort(organization)
-        val sub_org: Short = DigitUtil.byteArrayToShort(sub_organization)
+        val org: Short = DigitUtil.byteArrayToShort(organization!!)
+        val sub_org: Short = DigitUtil.byteArrayToShort(sub_organization!!)
         return LockVersion(protocol_type, sub_version, scene, org, sub_org)
     }
 
@@ -224,10 +218,10 @@ class Command {
             commandWithoutChecksum[2] = protocol_type
             commandWithoutChecksum[3] = sub_version
             commandWithoutChecksum[4] = scene
-            commandWithoutChecksum[5] = organization[0]
-            commandWithoutChecksum[6] = organization[1]
-            commandWithoutChecksum[7] = sub_organization[0]
-            commandWithoutChecksum[8] = sub_organization[1]
+            commandWithoutChecksum[5] = organization!![0]
+            commandWithoutChecksum[6] = organization!![1]
+            commandWithoutChecksum[7] = sub_organization!![0]
+            commandWithoutChecksum[8] = sub_organization!![1]
             commandWithoutChecksum[9] = command
             commandWithoutChecksum[10] = encrypt
             commandWithoutChecksum[11] = length
@@ -252,10 +246,11 @@ class Command {
                 "buildCommand : " + Char(command.toUShort()) + "-" + String.format(
                     "%#x",
                     command
-                ), DBG
+                ),
+                DBG
             )
             commandWithChecksum
-        } else {    //V4之前的版本使用
+        } else { // V4之前的版本使用
             val commandWithoutChecksum = ByteArray(2 + 1 + 1 + 1 + 1 + length)
             commandWithoutChecksum[0] = header[0]
             commandWithoutChecksum[1] = header[1]
@@ -534,7 +529,7 @@ class Command {
         const val COMM_GET_WIFI_INFO = 0xf6.toByte()
         const val COMM_NB_ACTIVATE_CONFIGURATION: Byte = 0x13
         const val VERSION_LOCK_V1: Byte = 1
-        private const val APP_COMMAND = 0xaa.toByte() //app命令
+        private const val APP_COMMAND = 0xaa.toByte() // app命令
         const val ENCRY_OLD = 1
         const val ENCRY_AES_CBC = 2
     }

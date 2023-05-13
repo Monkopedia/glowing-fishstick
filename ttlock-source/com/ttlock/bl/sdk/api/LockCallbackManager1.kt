@@ -2,7 +2,10 @@ package com.ttlock.bl.sdk.api
 
 import android.util.SparseArray
 import com.ttlock.bl.sdk.callback.ConnectCallback
+import com.ttlock.bl.sdk.callback.LockCallback
 import com.ttlock.bl.sdk.callback.OperationType
+import com.ttlock.bl.sdk.callback.ScanLockCallback
+import com.ttlock.bl.sdk.entity.LockError
 
 /**
  * Created on  2019/4/2 0002 15:12
@@ -19,7 +22,7 @@ internal class LockCallbackManager private constructor() {
     }
 
     private object InstanceHolder {
-        private val mInstance = LockCallbackManager()
+        val mInstance = LockCallbackManager()
     }
 
     fun setLockScanCallback(callback: ScanLockCallback?) {
@@ -81,7 +84,7 @@ internal class LockCallbackManager private constructor() {
     fun getCallback(): LockCallback? {
         if (mCallbackArray.size() > 0) {
             val operationType: Int = mCallbackArray.keyAt(0)
-            val currentCallback: LockCallback = mCallbackArray.get(operationType)
+            val currentCallback: LockCallback? = mCallbackArray.get(operationType)
             if (currentCallback != null) {
                 mCallbackArray.clear()
             }

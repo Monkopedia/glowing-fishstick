@@ -97,13 +97,13 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
         synchronized(mStateLock) {
             if (mConnState == CONN_STATE_IDLE) {
                 TelinkLog.d(
-                    "connect " + getDeviceName() + " -- "
-                            + getMacAddress()
+                    "connect " + getDeviceName() + " -- " +
+                        getMacAddress()
                 )
                 mConnState = CONN_STATE_CONNECTING
                 gatt = device.connectGatt(context, false, this)
                 //                this.gatt = this.device.connectGatt(context, false, this, BluetoothDevice.TRANSPORT_LE);
-                requestConnectionPriority(CONNECTION_PRIORITY_HIGH) //todo:
+                requestConnectionPriority(CONNECTION_PRIORITY_HIGH) // todo:
                 if (gatt == null) {
                     disconnect()
                     mConnState = CONN_STATE_IDLE
@@ -116,8 +116,8 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
     fun disconnect() {
         synchronized(mStateLock) { if (mConnState != CONN_STATE_CONNECTING && mConnState != CONN_STATE_CONNECTED) return }
         TelinkLog.d(
-            "disconnect " + getDeviceName() + " -- "
-                    + getMacAddress()
+            "disconnect " + getDeviceName() + " -- " +
+                getMacAddress()
         )
         this.clear()
         synchronized(mStateLock) {
@@ -176,7 +176,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
      * Protected API
      */
     protected open fun onConnect() {
-        //this.requestConnectionPriority(CONNECTION_PRIORITY_BALANCED);
+        // this.requestConnectionPriority(CONNECTION_PRIORITY_BALANCED);
         enableMonitorRssi(monitorRssi)
     }
 
@@ -185,14 +185,16 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
     }
 
     protected open fun onServicesDiscovered(services: List<BluetoothGattService?>) {
-        for (service in services) { //TODO:test
+        for (service in services) { // TODO:test
             Log.e("tag", "service:" + service.getUuid())
         }
     }
 
     protected open fun onNotify(
-        data: ByteArray?, serviceUUID: UUID?,
-        characteristicUUID: UUID?, tag: Any?
+        data: ByteArray?,
+        serviceUUID: UUID?,
+        characteristicUUID: UUID?,
+        tag: Any?
     ) {
     }
 
@@ -367,7 +369,9 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
      */
     private fun readDescriptor(
         commandContext: CommandContext,
-        serviceUUID: UUID, characteristicUUID: UUID, descriptorUUID: UUID
+        serviceUUID: UUID,
+        characteristicUUID: UUID,
+        descriptorUUID: UUID
     ) {
         var success = true
         var errorMsg = ""
@@ -403,7 +407,8 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
 
     private fun readCharacteristic(
         commandContext: CommandContext,
-        serviceUUID: UUID, characteristicUUID: UUID
+        serviceUUID: UUID,
+        characteristicUUID: UUID
     ) {
         var success = true
         var errorMsg = ""
@@ -432,7 +437,9 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
 
     private fun writeCharacteristic(
         commandContext: CommandContext,
-        serviceUUID: UUID, characteristicUUID: UUID, writeType: Int,
+        serviceUUID: UUID,
+        characteristicUUID: UUID,
+        writeType: Int,
         data: ByteArray
     ) {
         var success = true
@@ -466,7 +473,8 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
 
     private fun enableNotification(
         commandContext: CommandContext,
-        serviceUUID: UUID, characteristicUUID: UUID
+        serviceUUID: UUID,
+        characteristicUUID: UUID
     ) {
         var success = true
         var errorMsg = ""
@@ -508,7 +516,8 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
 
     private fun disableNotification(
         commandContext: CommandContext,
-        serviceUUID: UUID, characteristicUUID: UUID
+        serviceUUID: UUID,
+        characteristicUUID: UUID
     ) {
         var success = true
         var errorMsg = ""
@@ -544,7 +553,9 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
     }
 
     private fun findWritableCharacteristic(
-        service: BluetoothGattService, characteristicUUID: UUID, writeType: Int
+        service: BluetoothGattService,
+        characteristicUUID: UUID,
+        writeType: Int
     ): BluetoothGattCharacteristic? {
         var characteristic: BluetoothGattCharacteristic? = null
         var writeProperty: Int = BluetoothGattCharacteristic.PROPERTY_WRITE
@@ -554,8 +565,8 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
         val characteristics: List<BluetoothGattCharacteristic> = service
             .getCharacteristics()
         for (c in characteristics) {
-            if (c.getProperties() and writeProperty !== 0
-                && characteristicUUID == c.getUuid()
+            if (c.getProperties() and writeProperty !== 0 &&
+                characteristicUUID == c.getUuid()
             ) {
                 characteristic = c
                 break
@@ -565,14 +576,15 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
     }
 
     private fun findNotifyCharacteristic(
-        service: BluetoothGattService, characteristicUUID: UUID
+        service: BluetoothGattService,
+        characteristicUUID: UUID
     ): BluetoothGattCharacteristic? {
         var characteristic: BluetoothGattCharacteristic? = null
         val characteristics: List<BluetoothGattCharacteristic> = service
             .getCharacteristics()
         for (c in characteristics) {
-            if (c.getProperties() and BluetoothGattCharacteristic.PROPERTY_NOTIFY !== 0
-                && characteristicUUID == c.getUuid()
+            if (c.getProperties() and BluetoothGattCharacteristic.PROPERTY_NOTIFY !== 0 &&
+                characteristicUUID == c.getUuid()
             ) {
                 characteristic = c
                 break
@@ -580,8 +592,8 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
         }
         if (characteristic != null) return characteristic
         for (c in characteristics) {
-            if (c.getProperties() and BluetoothGattCharacteristic.PROPERTY_INDICATE !== 0
-                && characteristicUUID == c.getUuid()
+            if (c.getProperties() and BluetoothGattCharacteristic.PROPERTY_INDICATE !== 0 &&
+                characteristicUUID == c.getUuid()
             ) {
                 characteristic = c
                 break
@@ -601,27 +613,30 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
         serviceUUID: UUID,
         characteristic: BluetoothGattCharacteristic
     ): String {
-        return (serviceUUID.toString() + "|" + characteristic.getUuid()
-                + "|" + characteristic.getInstanceId())
+        return (
+            serviceUUID.toString() + "|" + characteristic.getUuid() +
+                "|" + characteristic.getInstanceId()
+            )
     }
 
     /********************************************************************************
      * Implements BluetoothGattCallback API
      */
     fun onConnectionStateChange(
-        gatt: BluetoothGatt?, status: Int,
+        gatt: BluetoothGatt?,
+        status: Int,
         newState: Int
     ) {
         TelinkLog.d(
-            "onConnectionStateChange  status :" + status + " state : "
-                    + newState
+            "onConnectionStateChange  status :" + status + " state : " +
+                newState
         )
         if (newState == BluetoothGatt.STATE_CONNECTED) {
             synchronized(mStateLock) { mConnState = CONN_STATE_CONNECTED }
             if (this.gatt == null || !this.gatt.discoverServices()) {
                 TelinkLog.d(
-                    "remote service discovery has been stopped status = "
-                            + newState
+                    "remote service discovery has been stopped status = " +
+                        newState
                 )
                 disconnect()
             } else {
@@ -662,13 +677,14 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
             )
         }
 
-        //todo:只接收一次通知数据
+        // todo:只接收一次通知数据
         mNotificationCallbacks.clear()
     }
 
     fun onCharacteristicRead(
         gatt: BluetoothGatt?,
-        characteristic: BluetoothGattCharacteristic, status: Int
+        characteristic: BluetoothGattCharacteristic,
+        status: Int
     ) {
         super.onCharacteristicRead(gatt, characteristic, status)
         cancelCommandTimeoutTask()
@@ -683,7 +699,8 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
 
     fun onCharacteristicWrite(
         gatt: BluetoothGatt?,
-        characteristic: BluetoothGattCharacteristic?, status: Int
+        characteristic: BluetoothGattCharacteristic?,
+        status: Int
     ) {
         super.onCharacteristicWrite(gatt, characteristic, status)
         cancelCommandTimeoutTask()
@@ -698,7 +715,8 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
 
     fun onDescriptorRead(
         gatt: BluetoothGatt?,
-        descriptor: BluetoothGattDescriptor, status: Int
+        descriptor: BluetoothGattDescriptor,
+        status: Int
     ) {
         super.onDescriptorRead(gatt, descriptor, status)
         cancelCommandTimeoutTask()
@@ -713,7 +731,8 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
 
     fun onDescriptorWrite(
         gatt: BluetoothGatt,
-        descriptor: BluetoothGattDescriptor, status: Int
+        descriptor: BluetoothGattDescriptor,
+        status: Int
     ) {
         super.onDescriptorWrite(gatt, descriptor, status)
         cancelCommandTimeoutTask()

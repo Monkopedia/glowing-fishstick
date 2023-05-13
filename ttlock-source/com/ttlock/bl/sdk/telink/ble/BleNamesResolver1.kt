@@ -15,9 +15,9 @@ object BleNamesResolver {
 
     init {
         mCharacteristics = HashMap<Any?, Any?>()
-        mValueFormats = SparseArray()
-        mAppearance = SparseArray()
-        mHeartRateSensorLocation = SparseArray()
+        mValueFormats = SparseArray(1)
+        mAppearance = SparseArray(1)
+        mHeartRateSensorLocation = SparseArray(1)
         mServices["00001811-0000-1000-8000-00805f9b34fb"] = "Alert Notification Service"
         mServices["0000180f-0000-1000-8000-00805f9b34fb"] = "Battery Service"
         mServices["00001810-0000-1000-8000-00805f9b34fb"] = "Blood Pressure"

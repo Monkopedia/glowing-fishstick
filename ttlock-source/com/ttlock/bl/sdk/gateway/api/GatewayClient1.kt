@@ -1,11 +1,11 @@
 package com.ttlock.bl.sdk.gateway.api
 
-import android.Manifest
 import com.ttlock.bl.sdk.gateway.callback.ConfigIpCallback
 import com.ttlock.bl.sdk.gateway.callback.ConnectCallback
 import com.ttlock.bl.sdk.gateway.callback.EnterDfuCallback
 import com.ttlock.bl.sdk.gateway.model.ConnectParam
 import com.ttlock.bl.sdk.gateway.model.OperationType
+import android.util.Context
 
 /**
  * Created by TTLock on 2019/4/24.
@@ -21,12 +21,10 @@ class GatewayClient private constructor() {
         private val mInstance = GatewayClient()
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH)
     fun isBLEEnabled(context: Context): Boolean {
         return mApi.isBLEEnabled(context)
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH)
     fun requestBleEnable(activity: Activity) {
         mApi.requestBleEnable(activity)
     }
@@ -35,13 +33,11 @@ class GatewayClient private constructor() {
         mApi.prepareBTService(context)
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH_ADMIN)
-    fun startScanGateway(callback: ScanGatewayCallback?) { //TODO:
+    fun startScanGateway(callback: ScanGatewayCallback?) { // TODO:
 //        GatewayCallbackManager.getInstance().setGatewayScanCallback(callback);
         mApi.startScanGateway(callback)
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH_ADMIN)
     fun stopScanGateway() {
         mApi.stopScanGateway()
         //        GatewayCallbackManager.getInstance().clearScanCallback();

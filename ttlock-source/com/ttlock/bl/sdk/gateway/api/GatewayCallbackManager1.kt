@@ -47,7 +47,7 @@ internal class GatewayCallbackManager private constructor() {
 //        }else {
 //            mCallbackArray.put(type,callback);
 //        }
-        //todo:
+        // todo:
         if (mCallbackArray.size() > 0) {
             mCallbackArray.clear()
         }

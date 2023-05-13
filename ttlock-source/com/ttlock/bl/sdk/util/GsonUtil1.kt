@@ -1,14 +1,17 @@
 package com.ttlock.bl.sdk.util
 
-import com.google.gson.Gson
-import java.lang.Exception
+import android.util.Gson
+import android.util.TypeToken
+import json.JSONArray
+import json.JSONException
+import json.JSONObject
 
 /**
  * Created by Smartlock on 2016/6/2.
  */
 object GsonUtil {
     var gson: Gson = Gson()
-    fun <T> toObject(json: String?, clazz: Class<T>?): T {
+    fun <T> toObject(json: String?, clazz: Class<T>): T {
         return gson.fromJson(json, clazz)
     }
 
@@ -119,8 +122,8 @@ object GsonUtil {
                 return jsonObject.getJSONObject(key)
             }
         } catch (e: Exception) {
-            return JSONObject()
+            return JSONObject(json)
         }
-        return JSONObject()
+        return JSONObject(json)
     }
 }

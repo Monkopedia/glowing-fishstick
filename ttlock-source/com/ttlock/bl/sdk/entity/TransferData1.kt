@@ -1,7 +1,5 @@
 package com.ttlock.bl.sdk.entity
 
-import android.text.TextUtils
-
 /**
  * Created by Administrator on 2016/8/12 0012.
  */
@@ -94,7 +92,7 @@ class TransferData {
     /**
      * 三代锁开门判重实用
      */
-    //(现在不用于校准锁时间,只用来生成开门的唯一标识)
+    // (现在不用于校准锁时间,只用来生成开门的唯一标识)
     private var unlockDate = System.currentTimeMillis()
 
     /**
@@ -195,7 +193,7 @@ class TransferData {
         return aesKeyArray
     }
 
-    fun setAesKeyArray(aesKeyArray: ByteArray) {
+    fun setAesKeyArray(aesKeyArray: ByteArray?) {
         Companion.aesKeyArray = aesKeyArray
     }
 
@@ -392,8 +390,8 @@ class TransferData {
         this.op = op
     }
 
-    fun getJson(): String? {
-        return json
+    fun getJson(): String {
+        return json!!
     }
 
     fun setJson(json: String?) {
@@ -558,6 +556,6 @@ class TransferData {
 
     companion object {
         /**-------------------------指令数据--------------------- */
-        var aesKeyArray: ByteArray
+        var aesKeyArray: ByteArray? = null
     }
 }

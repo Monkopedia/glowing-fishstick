@@ -18,7 +18,7 @@ class OkHttpRequest private constructor() {
             }
             val sb = StringBuilder()
             for (key in params.keys) sb.append(key).append('=').append(params[key]).append('&')
-            //		params.forEach((key, value) -> sb.append(key).append('=').append(value).append('&'));
+            // 		params.forEach((key, value) -> sb.append(key).append('=').append(value).append('&'));
             return sb.substring(0, sb.length - 1)
         }
 
@@ -27,9 +27,9 @@ class OkHttpRequest private constructor() {
             val paramUrl = getParamUrl(params)
             val newUrl = if (TextUtils.isEmpty(paramUrl)) url else "$url?$paramUrl"
             val requestBuilder: Request.Builder = Builder().url(newUrl)
-            //		if (headers != null) {
-//			headers.forEach((key, value) -> requestBuilder.addHeader(Utils.parseString(key), Utils.parseString(value)));
-//		}
+            // 		if (headers != null) {
+// 			headers.forEach((key, value) -> requestBuilder.addHeader(Utils.parseString(key), Utils.parseString(value)));
+// 		}
             val request: Request = requestBuilder.build()
             val response: Response
             try {
@@ -54,13 +54,13 @@ class OkHttpRequest private constructor() {
                     LogUtil.d(String.format("%s:%s", key, value), DBG)
                     formBodyBuilder.add(key, value)
                 }
-                //			params.forEach((key, value) -> formBodyBuilder.add(key, value));
+                // 			params.forEach((key, value) -> formBodyBuilder.add(key, value));
             }
             val body: RequestBody = formBodyBuilder.build()
             val requestBuilder: Request.Builder = Builder().url(url).post(body)
-            //		if (headers != null) {
-//			headers.forEach((key, value) -> requestBuilder.addHeader(key, value));
-//		}
+            // 		if (headers != null) {
+// 			headers.forEach((key, value) -> requestBuilder.addHeader(key, value));
+// 		}
             val request: Request = requestBuilder.build()
             val response: Response
             try {

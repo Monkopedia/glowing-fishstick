@@ -1,7 +1,13 @@
 package com.ttlock.bl.sdk.api
 
-import android.Manifest
-import java.util.ArrayList
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothLeScanner
+import android.bluetooth.ScanCallback
+import android.bluetooth.ScanResult
+import com.ttlock.bl.sdk.callback.ScanKeypadCallback
+import com.ttlock.bl.sdk.device.WirelessKeypad
+import com.ttlock.bl.sdk.entity.LockError
+import com.ttlock.bl.sdk.util.LogUtil
 
 /**
  * Created by TTLock on 2019/4/28.
@@ -11,67 +17,65 @@ internal class ScanManager {
     private var mBluetoothAdapter: BluetoothAdapter? = null
     private var scanner: BluetoothLeScanner? = null
     private var leScanCallback: ScanCallback? = null
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+
     private fun prepare() {
         if (mBluetoothAdapter == null) mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         if (scanner == null && mBluetoothAdapter != null) {
-            scanner = mBluetoothAdapter.getBluetoothLeScanner()
+            scanner = mBluetoothAdapter!!.getBluetoothLeScanner()
         }
-        if (leScanCallback == null) { //TODO:更换对象
-            leScanCallback = object : ScanCallback() {
-                @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH])
-                fun onScanResult(callbackType: Int, result: ScanResult?) {
+        if (leScanCallback == null) { // TODO:更换对象
+            leScanCallback = object : android.bluetooth.ScanCallback() {
+
+                override fun onScanResult(callbackType: Int, result: ScanResult) {
                     super.onScanResult(callbackType, result)
-                    if (scanCallback != null) {
-                        scanCallback.onScanKeyboardSuccess(WirelessKeypad(result))
-                    }
+                    scanCallback?.onScanKeyboardSuccess(WirelessKeypad(result))
                 }
 
-                fun onScanFailed(errorCode: Int) {
+                override fun onScanFailed(errorCode: Int) {
                     super.onScanFailed(errorCode)
                     if (scanCallback == null) {
                         return
                     }
                     var error: LockError = LockError.SCAN_FAILED_OUT_OF_HARDWARE_RESOURCES
                     when (errorCode) {
-                        ScanCallback.SCAN_FAILED_ALREADY_STARTED -> error =
-                            LockError.SCAN_FAILED_ALREADY_START
-                        ScanCallback.SCAN_FAILED_APPLICATION_REGISTRATION_FAILED -> error =
-                            LockError.SCAN_FAILED_APPLICATION_REGISTRATION_FAILED
-                        ScanCallback.SCAN_FAILED_INTERNAL_ERROR -> error =
-                            LockError.SCAN_FAILED_INTERNAL_ERROR
-                        ScanCallback.SCAN_FAILED_FEATURE_UNSUPPORTED -> error =
-                            LockError.SCAN_FAILED_FEATURE_UNSUPPORTED
+                        ScanCallback.SCAN_FAILED_ALREADY_STARTED ->
+                            error =
+                                LockError.SCAN_FAILED_ALREADY_START
+                        ScanCallback.SCAN_FAILED_APPLICATION_REGISTRATION_FAILED ->
+                            error =
+                                LockError.SCAN_FAILED_APPLICATION_REGISTRATION_FAILED
+                        ScanCallback.SCAN_FAILED_INTERNAL_ERROR ->
+                            error =
+                                LockError.SCAN_FAILED_INTERNAL_ERROR
+                        ScanCallback.SCAN_FAILED_FEATURE_UNSUPPORTED ->
+                            error =
+                                LockError.SCAN_FAILED_FEATURE_UNSUPPORTED
                         else -> {}
                     }
-                    scanCallback.onFail(error)
+                    scanCallback!!.onFail(error)
                 }
             }
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.BLUETOOTH])
     fun startScan(scanCallback: ScanKeypadCallback?) {
         prepare()
         this.scanCallback = scanCallback
         if (scanner == null) {
             LogUtil.w("BT le scanner not available")
         } else {
-            val settings: ScanSettings = Builder()
-                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-                .build()
-            val filters: MutableList<ScanFilter> = ArrayList<ScanFilter>()
-            filters.add(Builder().setServiceUuid(ParcelUuid.fromString(UUID_SERVICE)).build())
-            scanner.startScan(filters, settings, leScanCallback)
+//            val settings: ScanSettings = Builder()
+//                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+//                .build()
+//            val filters: MutableList<ScanFilter> = ArrayList<ScanFilter>()
+//            filters.add(Builder().setServiceUuid(ParcelUuid.fromString(UUID_SERVICE)).build())
+            scanner!!.startScan(UUID_SERVICE, leScanCallback)
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.BLUETOOTH])
-    fun stopScan() { //TODO:
+    fun stopScan() { // TODO:
         if (leScanCallback != null && scanner != null) {
-            scanner.stopScan(leScanCallback)
+            scanner!!.stopScan(leScanCallback!!)
             scanCallback = null
         }
     }

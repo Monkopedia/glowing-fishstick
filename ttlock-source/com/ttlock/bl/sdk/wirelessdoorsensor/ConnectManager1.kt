@@ -26,7 +26,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
 
     override fun onConnectSuccess(device: WirelessDoorSensor?) {
         val callbackType: Int = DoorSensorCallbackManager.Companion.getInstance().getOperationType()
-        //TODO:
+        // TODO:
         if (mConnectParam == null) return
         when (callbackType) {
             OperationType.INIT -> mApi.init(device)
@@ -60,7 +60,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
     //        mDataCheckHandler.removeCallbacks(mDataCheckErrorRunnable);
     //    }
     fun isDeviceConnected(address: String?): Boolean {
-        //TODO:
+        // TODO:
 //        return BluetoothImpl.getInstance().isConnected(address);
         return false
     }

@@ -10,7 +10,7 @@ import java.lang.Exception
 class LockData : Serializable {
     var uid = 0
     var lockName: String? = null
-    var lockMac: String? = null
+    lateinit var lockMac: String
 
     /**
      * 110301 admin ; 110302 normal
@@ -70,7 +70,7 @@ class LockData : Serializable {
     /**
      * hex feature value
      */
-    var featureValue = "1"
+    var featureValue: String? = "1"
     var startDate: Long = 0
     var endDate: Long = 0
     fun getStartDate(): Long {
@@ -153,7 +153,7 @@ class LockData : Serializable {
      * 校验加密串
      */
     var ref: String? = null
-    //--------------新增字段----------------
+    // --------------新增字段----------------
     /**
      * 自动闭锁时间（单位秒），-1代表关闭自动闭锁 0 未知
      */
@@ -173,14 +173,14 @@ class LockData : Serializable {
      */
     var displayPasscode = 0
     var lockSound = 0
-    var sensitivity //灵敏度：-1 未知、0-关闭、1-低、2-中、3-高
-            = 0
+    var sensitivity = // 灵敏度：-1 未知、0-关闭、1-低、2-中、3-高
+        0
 
     /**
      * 不支持的情况不传该字段
      */
-    var settingValue //用于表示防撬开关、重置按键开关，反锁开关、开门方向、常开模式自动开锁开关、Wifi锁省电模式开关等设置项
-            : Int? = null
+    var settingValue: Int? = // 用于表示防撬开关、重置按键开关，反锁开关、开门方向、常开模式自动开锁开关、Wifi锁省电模式开关等设置项
+        null
 
     /**
      * 不完整密码
@@ -193,43 +193,43 @@ class LockData : Serializable {
     var soundVolume = 0
     override fun toString(): String {
         return "LockData{" +
-                "uid=" + uid +
-                ", lockName='" + lockName + '\'' +
-                ", lockMac='" + lockMac + '\'' +
-                ", userType=" + userType +
-                ", lockVersion=" + lockVersion +
-                ", adminPwd='" + adminPwd + '\'' +
-                ", lockKey='" + lockKey + '\'' +
-                ", lockFlagPos=" + lockFlagPos +
-                ", noKeyPwd='" + noKeyPwd + '\'' +
-                ", deletePwd='" + deletePwd + '\'' +
-                ", pwdInfo='" + pwdInfo + '\'' +
-                ", timestamp=" + timestamp +
-                ", aesKeyStr='" + aesKeyStr + '\'' +
-                ", specialValue=" + specialValue +
-                ", featureValue='" + featureValue + '\'' +
-                ", startDate=" + startDate +
-                ", endDate=" + endDate +
-                ", electricQuantity=" + electricQuantity +
-                ", timezoneRawOffset=" + timezoneRawOffset +
-                ", modelNum='" + modelNum + '\'' +
-                ", hardwareRevision='" + hardwareRevision + '\'' +
-                ", firmwareRevision='" + firmwareRevision + '\'' +
-                ", nbNodeId='" + nbNodeId + '\'' +
-                ", nbOperator='" + nbOperator + '\'' +
-                ", nbCardNumber='" + nbCardNumber + '\'' +
-                ", nbRssi=" + nbRssi +
-                ", version='" + version + '\'' +
-                ", factoryDate='" + factoryDate + '\'' +
-                ", ref='" + ref + '\'' +
-                ", autoLockTime=" + autoLockTime +
-                ", lightingTime=" + lightingTime +
-                ", resetButton=" + resetButton +
-                ", tamperAlert=" + tamperAlert +
-                ", privacyLock=" + privacyLock +
-                ", displayPasscode=" + displayPasscode +
-                ", lockSound=" + lockSound +
-                '}'
+            "uid=" + uid +
+            ", lockName='" + lockName + '\'' +
+            ", lockMac='" + lockMac + '\'' +
+            ", userType=" + userType +
+            ", lockVersion=" + lockVersion +
+            ", adminPwd='" + adminPwd + '\'' +
+            ", lockKey='" + lockKey + '\'' +
+            ", lockFlagPos=" + lockFlagPos +
+            ", noKeyPwd='" + noKeyPwd + '\'' +
+            ", deletePwd='" + deletePwd + '\'' +
+            ", pwdInfo='" + pwdInfo + '\'' +
+            ", timestamp=" + timestamp +
+            ", aesKeyStr='" + aesKeyStr + '\'' +
+            ", specialValue=" + specialValue +
+            ", featureValue='" + featureValue + '\'' +
+            ", startDate=" + startDate +
+            ", endDate=" + endDate +
+            ", electricQuantity=" + electricQuantity +
+            ", timezoneRawOffset=" + timezoneRawOffset +
+            ", modelNum='" + modelNum + '\'' +
+            ", hardwareRevision='" + hardwareRevision + '\'' +
+            ", firmwareRevision='" + firmwareRevision + '\'' +
+            ", nbNodeId='" + nbNodeId + '\'' +
+            ", nbOperator='" + nbOperator + '\'' +
+            ", nbCardNumber='" + nbCardNumber + '\'' +
+            ", nbRssi=" + nbRssi +
+            ", version='" + version + '\'' +
+            ", factoryDate='" + factoryDate + '\'' +
+            ", ref='" + ref + '\'' +
+            ", autoLockTime=" + autoLockTime +
+            ", lightingTime=" + lightingTime +
+            ", resetButton=" + resetButton +
+            ", tamperAlert=" + tamperAlert +
+            ", privacyLock=" + privacyLock +
+            ", displayPasscode=" + displayPasscode +
+            ", lockSound=" + lockSound +
+            '}'
     }
 
     fun toJson(): String {
@@ -266,11 +266,11 @@ class LockData : Serializable {
         this.lockName = lockName
     }
 
-    fun getLockMac(): String? {
+    fun getLockMac(): String {
         return lockMac
     }
 
-    fun setLockMac(lockMac: String?) {
+    fun setLockMac(lockMac: String) {
         this.lockMac = lockMac
     }
 

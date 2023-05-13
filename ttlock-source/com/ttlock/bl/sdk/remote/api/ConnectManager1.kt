@@ -33,7 +33,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
 
     override fun onConnectSuccess(device: Remote?) {
         val callbackType: Int = RemoteCallbackManager.Companion.getInstance().getOperationType()
-        //TODO:
+        // TODO:
 //        startDataCheckTimer();
         if (mConnectParam == null) return
         when (callbackType) {
@@ -67,7 +67,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
     }
 
     fun isDeviceConnected(address: String): Boolean {
-        //TODO:
+        // TODO:
         return GattCallbackHelper.Companion.getInstance().isConnected(address)
         //        return false;
     }
@@ -75,7 +75,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
     fun connect2Device(address: String?) {
         mCurrentMac = address
         RemoteCallbackManager.Companion.getInstance().setConnectCallback(this)
-        //TODO:
+        // TODO:
 //        BluetoothImpl.getInstance().connect(address);
     }
 

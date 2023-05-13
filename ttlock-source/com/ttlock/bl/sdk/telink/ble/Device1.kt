@@ -384,8 +384,8 @@ class Device(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int) :
                 onOtaSuccess();*/
             } else if (command.tag == TAG_OTA_WRITE) {
 //                Log.e("tag", "TAG_OTA_WRITE");
-                //int delay = 0;
-                //if (delay <= 0) {
+                // int delay = 0;
+                // if (delay <= 0) {
                 /*if (!validateOta()) {
                     sendNextOtaPacketCommand(0);
                 } else {

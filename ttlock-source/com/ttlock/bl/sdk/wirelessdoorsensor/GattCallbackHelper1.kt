@@ -11,7 +11,7 @@ import java.util.*
  * Created by TTLock on 2019/3/11.
  */
 class GattCallbackHelper : BaseGattCallbackHelper<WirelessDoorSensor?>() {
-    //TODO:
+    // TODO:
     private var isInitSuccess = false
     protected override fun noResponseCallback() {
         val callback: DoorSensorCallback =
@@ -20,15 +20,17 @@ class GattCallbackHelper : BaseGattCallbackHelper<WirelessDoorSensor?>() {
     }
 
     protected override fun disconnectedCallback() {
-        mAppExecutor.mainThread().execute(Runnable {
-            val mConnectCallback: ConnectCallback =
-                DoorSensorCallbackManager.Companion.getInstance().getConnectCallback()
-            if (mConnectCallback != null) {
-                Log.d("OMG", "====disconnect==1==$isInitSuccess")
-                mConnectCallback.onFail(DoorSensorError.CONNECT_FAIL)
+        mAppExecutor.mainThread().execute(
+            Runnable {
+                val mConnectCallback: ConnectCallback =
+                    DoorSensorCallbackManager.Companion.getInstance().getConnectCallback()
+                if (mConnectCallback != null) {
+                    Log.d("OMG", "====disconnect==1==$isInitSuccess")
+                    mConnectCallback.onFail(DoorSensorError.CONNECT_FAIL)
+                }
+                isInitSuccess = false
             }
-            isInitSuccess = false
-        })
+        )
     }
 
     override fun onCharacteristicRead(
@@ -41,66 +43,70 @@ class GattCallbackHelper : BaseGattCallbackHelper<WirelessDoorSensor?>() {
     }
 
     protected override fun connectCallback() {
-        mAppExecutor.mainThread().execute(Runnable {
-            val mConnectCallback: ConnectCallback =
-                DoorSensorCallbackManager.Companion.getInstance().getConnectCallback()
-            if (mConnectCallback != null) {
-                Log.d("OMG", "====connect success==1==")
-                mConnectCallback.onConnectSuccess(device)
+        mAppExecutor.mainThread().execute(
+            Runnable {
+                val mConnectCallback: ConnectCallback =
+                    DoorSensorCallbackManager.Companion.getInstance().getConnectCallback()
+                if (mConnectCallback != null) {
+                    Log.d("OMG", "====connect success==1==")
+                    mConnectCallback.onConnectSuccess(device)
+                }
             }
-        })
+        )
     }
 
     override fun doWithData(values: ByteArray?) {
-        mAppExecutor.mainThread().execute(Runnable {
-            val command = Command(values)
-            command.mac = device.getAddress()
-            val data = command.getData()
-            LogUtil.d("command:" + DigitUtil.byteToHex(command.getCommand()))
-            LogUtil.d("data:" + DigitUtil.byteArrayToHexString(data))
-            if (data == null) {
-                LogUtil.d("data is null")
-                return@Runnable
-            }
-            if (data[1].toInt() == 1) { //成功
-                when (data[0]) {
-                    Command.Companion.COMM_SET_LOCK -> {
-                        val initDoorSensorResult = InitDoorSensorResult()
-                        initDoorSensorResult.setBatteryLevel(data[2].toInt())
-                        initDoorSensorResult.setFirmwareInfo(firmwareInfo)
-                        val callback: DoorSensorCallback =
-                            DoorSensorCallbackManager.Companion.getInstance().getCallback()
-                        if (callback != null) {
-                            (callback as InitDoorSensorCallback).onInitSuccess(initDoorSensorResult)
+        mAppExecutor.mainThread().execute(
+            Runnable {
+                val command = Command(values)
+                command.mac = device.getAddress()
+                val data = command.getData()
+                LogUtil.d("command:" + DigitUtil.byteToHex(command.getCommand()))
+                LogUtil.d("data:" + DigitUtil.byteArrayToHexString(data))
+                if (data == null) {
+                    LogUtil.d("data is null")
+                    return@Runnable
+                }
+                if (data[1].toInt() == 1) { // 成功
+                    when (data[0]) {
+                        Command.Companion.COMM_SET_LOCK -> {
+                            val initDoorSensorResult = InitDoorSensorResult()
+                            initDoorSensorResult.setBatteryLevel(data[2].toInt())
+                            initDoorSensorResult.setFirmwareInfo(firmwareInfo)
+                            val callback: DoorSensorCallback =
+                                DoorSensorCallbackManager.Companion.getInstance().getCallback()
+                            if (callback != null) {
+                                (callback as InitDoorSensorCallback).onInitSuccess(initDoorSensorResult)
+                            }
+                            // 成功之后主动断开连接
+                            disconnect()
                         }
-                        //成功之后主动断开连接
-                        disconnect()
-                    }
-                    Command.Companion.COMM_CHECK_ADMIN -> {
-                        val responseRandom: Long =
-                            DigitUtil.bytesToLong(Arrays.copyOfRange(data, 2, data.size))
-                        CommandUtil.checkRandom(
-                            device,
-                            ConnectManager.Companion.getInstance().getConnectParam(),
-                            responseRandom
-                        )
-                    }
-                    Command.Companion.COMM_CHECK_RANDOM -> CommandUtil.enterDfu(device)
-                    Command.Companion.COMM_ENTER_DFU -> {
-                        callback = DoorSensorCallbackManager.Companion.getInstance().getCallback()
-                        if (callback != null) {
-                            (callback as EnterDfuCallback).onEnterDfuSuccess()
+                        Command.Companion.COMM_CHECK_ADMIN -> {
+                            val responseRandom: Long =
+                                DigitUtil.bytesToLong(Arrays.copyOfRange(data, 2, data.size))
+                            CommandUtil.checkRandom(
+                                device,
+                                ConnectManager.Companion.getInstance().getConnectParam(),
+                                responseRandom
+                            )
                         }
+                        Command.Companion.COMM_CHECK_RANDOM -> CommandUtil.enterDfu(device)
+                        Command.Companion.COMM_ENTER_DFU -> {
+                            callback = DoorSensorCallbackManager.Companion.getInstance().getCallback()
+                            if (callback != null) {
+                                (callback as EnterDfuCallback).onEnterDfuSuccess()
+                            }
+                        }
+                    }
+                } else {
+                    val callback: DoorSensorCallback =
+                        DoorSensorCallbackManager.Companion.getInstance().getCallback()
+                    if (callback != null) {
+                        callback.onFail(DoorSensorError.FAILED)
                     }
                 }
-            } else {
-                val callback: DoorSensorCallback =
-                    DoorSensorCallbackManager.Companion.getInstance().getCallback()
-                if (callback != null) {
-                    callback.onFail(DoorSensorError.FAILED)
-                }
             }
-        })
+        )
     }
 
     companion object {

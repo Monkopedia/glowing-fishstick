@@ -1,11 +1,44 @@
 package com.ttlock.bl.sdk.api
 
-import android.Manifest
 import com.ttlock.bl.sdk.callback.ConfigIpCallback
 import com.ttlock.bl.sdk.callback.OperationType
 import com.ttlock.bl.sdk.entity.ConnectParam
 import java.lang.Exception
 import java.util.ArrayList
+
+import android.util.Context
+import android.util.TextUtils
+import com.ttlock.bl.sdk.callback.*
+import com.ttlock.bl.sdk.callback.ControlLockCallback
+import com.ttlock.bl.sdk.callback.GetLockMuteModeStateCallback
+import com.ttlock.bl.sdk.callback.InitLockCallback
+import com.ttlock.bl.sdk.callback.ResetKeyCallback
+import com.ttlock.bl.sdk.callback.ResetLockCallback
+import com.ttlock.bl.sdk.callback.ScanLockCallback
+import com.ttlock.bl.sdk.callback.SetLockMuteModeCallback
+import com.ttlock.bl.sdk.callback.SetRemoteUnlockSwitchCallback
+import com.ttlock.bl.sdk.constant.ControlAction
+import com.ttlock.bl.sdk.constant.FeatureValue
+import com.ttlock.bl.sdk.entity.AccessoryInfo
+import com.ttlock.bl.sdk.entity.HotelData
+import com.ttlock.bl.sdk.entity.HotelInfo
+import com.ttlock.bl.sdk.entity.IpSetting
+import com.ttlock.bl.sdk.entity.LockData
+import com.ttlock.bl.sdk.entity.LockError
+import com.ttlock.bl.sdk.entity.NBAwakeConfig
+import com.ttlock.bl.sdk.entity.NBAwakeMode
+import com.ttlock.bl.sdk.entity.NBAwakeTime
+import com.ttlock.bl.sdk.entity.PassageModeConfig
+import com.ttlock.bl.sdk.entity.PowerSaverWorkMode
+import com.ttlock.bl.sdk.entity.SoundVolume
+import com.ttlock.bl.sdk.entity.TTLiftWorkMode
+import com.ttlock.bl.sdk.entity.TTLockConfigType
+import com.ttlock.bl.sdk.entity.UnlockDirection
+import com.ttlock.bl.sdk.entity.ValidityInfo
+import com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.FeatureValueUtil
+import com.ttlock.bl.sdk.util.GsonUtil
+import com.ttlock.bl.sdk.util.LogUtil
 
 /**
  * Created on  2019/4/11 0011 15:34
@@ -22,22 +55,13 @@ class TTLockClient private constructor() {
      * @param context
      * @return
      */
-    @RequiresPermission(Manifest.permission.BLUETOOTH)
-    fun isBLEEnabled(context: Context?): Boolean {
+
+    fun isBLEEnabled(context: Context): Boolean {
         return mApi.isBLEEnabled(context)
     }
 
-    /**
-     * Request to turn on Bluetooth
-     * @param activity
-     */
-    @RequiresPermission(Manifest.permission.BLUETOOTH)
-    fun requestBleEnable(activity: Activity?) {
-        mApi.requestBleEnable(activity)
-    }
-
     private object InstanceHolder {
-        private val mInstance = TTLockClient()
+        val mInstance = TTLockClient()
     }
 
     /**
@@ -59,7 +83,7 @@ class TTLockClient private constructor() {
      * start scan BT lock
      * @param callback
      */
-    @RequiresPermission(Manifest.permission.BLUETOOTH)
+
     fun startScanLock(callback: ScanLockCallback?) {
         LockCallbackManager.Companion.getInstance().setLockScanCallback(callback)
         mApi.startScan()
@@ -80,9 +104,9 @@ class TTLockClient private constructor() {
      */
     fun initLock(device: ExtendedBluetoothDevice, callback: InitLockCallback) {
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.INIT_LOCK, callback)
+            .isDeviceBusy(OperationType.INIT_LOCK, callback)
         ) {
-            val address = device.address
+            val address = device.getAddress()
             if (ConnectManager.Companion.getInstance().isDeviceConnected(address)) {
                 mApi.initLock(device)
             } else {
@@ -99,7 +123,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.CONNECT_LOCK, callback)
+            .isDeviceBusy(OperationType.CONNECT_LOCK, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
@@ -128,7 +152,7 @@ class TTLockClient private constructor() {
         }
         lockParam.lockFlagPos++
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.RESET_KEY, callback)
+            .isDeviceBusy(OperationType.RESET_KEY, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
@@ -156,10 +180,10 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.RESET_LOCK, callback)
+            .isDeviceBusy(OperationType.RESET_LOCK, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
-            if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
+            if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac!!)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
                     .setLockData(lockParam)
                 mApi.resetLock(lockParam)
@@ -167,7 +191,7 @@ class TTLockClient private constructor() {
                 val param = ConnectParam()
                 param.lockData = lockParam
                 ConnectManager.Companion.getInstance().storeConnectParamForCallback(param)
-                ConnectManager.Companion.getInstance().connect2Device(lockParam.lockMac)
+                ConnectManager.Companion.getInstance().connect2Device(lockParam.lockMac!!)
             }
         }
     }
@@ -199,7 +223,7 @@ class TTLockClient private constructor() {
             isRollingGate = true
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.CONTROL_LOCK, callback, isRollingGate)
+            .isDeviceBusy(OperationType.CONTROL_LOCK, callback, isRollingGate)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (lockParam.getUid() == 0 && uid != 0) {
@@ -216,7 +240,7 @@ class TTLockClient private constructor() {
             } else {
                 val param = ConnectParam()
                 param.lockData = lockParam
-                param.controlAction = controlAction
+                param.setControlAction(controlAction)
                 ConnectManager.Companion.getInstance().storeConnectParamForCallback(param)
                 ConnectManager.Companion.getInstance().connect2Device(lockParam.lockMac)
             }
@@ -240,13 +264,13 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_MUTE_MODE_STATE, callback)
+            .isDeviceBusy(OperationType.GET_MUTE_MODE_STATE, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (!isSupportThisOperation(lockParam)) {
                 return
             }
-            if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
+            if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac!!)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
                     .setLockData(lockParam)
                 mApi.getMuteModeState(lockParam)
@@ -279,7 +303,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_MUTE_MODE_STATE, callback)
+            .isDeviceBusy(OperationType.SET_MUTE_MODE_STATE, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (!isSupportThisOperation(lockParam)) {
@@ -294,7 +318,7 @@ class TTLockClient private constructor() {
             } else {
                 val param = ConnectParam()
                 param.lockData = lockParam
-                param.isLockModeEnable = enable
+                param.setLockModeEnable( enable)
                 ConnectManager.Companion.getInstance().storeConnectParamForCallback(param)
                 ConnectManager.Companion.getInstance().connect2Device(lockParam.lockMac)
             }
@@ -320,7 +344,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_REMOTE_UNLOCK_STATE, callback)
+            .isDeviceBusy(OperationType.SET_REMOTE_UNLOCK_STATE, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (!isSupportThisOperation(lockParam)) {
@@ -335,7 +359,7 @@ class TTLockClient private constructor() {
             } else {
                 val param = ConnectParam()
                 param.lockData = lockParam
-                param.isLockModeEnable = enable
+                param.setLockModeEnable( enable)
                 ConnectManager.Companion.getInstance().storeConnectParamForCallback(param)
                 ConnectManager.Companion.getInstance().connect2Device(lockParam.lockMac)
             }
@@ -359,7 +383,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_REMOTE_UNLOCK_STATE, callback)
+            .isDeviceBusy(OperationType.GET_REMOTE_UNLOCK_STATE, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (!isSupportThisOperation(lockParam)) {
@@ -397,7 +421,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_LOCK_TIME, callback)
+            .isDeviceBusy(OperationType.SET_LOCK_TIME, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
@@ -429,7 +453,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_LOCK_TIME, callback)
+            .isDeviceBusy(OperationType.GET_LOCK_TIME, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
@@ -464,7 +488,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_OPERATION_LOG, callback)
+            .isDeviceBusy(OperationType.GET_OPERATION_LOG, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
@@ -496,7 +520,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_ELECTRIC_QUALITY, callback)
+            .isDeviceBusy(OperationType.GET_ELECTRIC_QUALITY, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
@@ -514,7 +538,7 @@ class TTLockClient private constructor() {
 
     fun getLockVersion(lockMac: String, callback: GetLockVersionCallback) {
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_LOCK_VERSION, callback)
+            .isDeviceBusy(OperationType.GET_LOCK_VERSION, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockMac)) {
                 mApi.getLockVersion()
@@ -533,7 +557,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_SPECIAL_VALUE, callback)
+            .isDeviceBusy(OperationType.GET_SPECIAL_VALUE, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
@@ -560,7 +584,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_SYSTEM_INFO, callback)
+            .isDeviceBusy(OperationType.GET_SYSTEM_INFO, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
@@ -583,7 +607,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_LOCK_STATUS, callback)
+            .isDeviceBusy(OperationType.GET_LOCK_STATUS, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
@@ -618,7 +642,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_AUTO_LOCK_PERIOD, callback)
+            .isDeviceBusy(OperationType.SET_AUTO_LOCK_PERIOD, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (!isSupportThisOperation(lockParam)) {
@@ -647,7 +671,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_AUTO_LOCK_PERIOD, callback)
+            .isDeviceBusy(OperationType.GET_AUTO_LOCK_PERIOD, callback)
         ) {
 //            没有特征值也会有自动闭锁时间
 //            if(!isSupportThisOperation(lockParam)){
@@ -689,17 +713,17 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.CREATE_CUSTOM_PASSCODE, callback)
+            .isDeviceBusy(OperationType.CREATE_CUSTOM_PASSCODE, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
 
-            //TODO:需要增加无线键盘的判断
+            // TODO:需要增加无线键盘的判断
 //            if(!isSupportThisOperation(lockParam)){
 //                return;
 //            }
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
                 val param: ConnectParam =
-                    ConnectManager.Companion.getInstance().getConnectParamForCallback()
+                    ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
                 param.lockData = lockParam
                 param.startDate = startDate
                 param.endDate = endDate
@@ -742,7 +766,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.MODIFY_PASSCODE, callback)
+            .isDeviceBusy(OperationType.MODIFY_PASSCODE, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (!isSupportThisOperation(lockParam)) {
@@ -751,7 +775,7 @@ class TTLockClient private constructor() {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
 //                ConnectManager.getInstance().getConnectParamForCallback().setLockData(lockParam);
                 val param: ConnectParam =
-                    ConnectManager.Companion.getInstance().getConnectParamForCallback()
+                    ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
                 param.lockData = lockParam
                 param.startDate = startDate
                 param.endDate = endDate
@@ -790,13 +814,13 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.DELETE_PASSCODE, callback)
+            .isDeviceBusy(OperationType.DELETE_PASSCODE, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
 //                ConnectManager.getInstance().getConnectParamForCallback().setLockData(lockParam);
                 val param: ConnectParam =
-                    ConnectManager.Companion.getInstance().getConnectParamForCallback()
+                    ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
                 param.lockData = lockParam
                 param.originalPasscode = passcode
                 mApi.deletePasscode(passcode, lockParam)
@@ -823,7 +847,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.RESET_PASSCODE, callback)
+            .isDeviceBusy(OperationType.RESET_PASSCODE, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
@@ -856,7 +880,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_ALL_VALID_PASSCODES, callback)
+            .isDeviceBusy(OperationType.GET_ALL_VALID_PASSCODES, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
@@ -882,7 +906,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_PASSCODE_INFO, callback)
+            .isDeviceBusy(OperationType.GET_PASSCODE_INFO, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
@@ -905,7 +929,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_ADMIN_PASSCODE, callback)
+            .isDeviceBusy(OperationType.GET_ADMIN_PASSCODE, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (!isSupportThisOperation(lockParam)) {
@@ -943,13 +967,13 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.MODIFY_ADMIN_PASSCODE, callback)
+            .isDeviceBusy(OperationType.MODIFY_ADMIN_PASSCODE, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
 //                ConnectManager.getInstance().getConnectParamForCallback().setLockData(lockParam);
                 val param: ConnectParam =
-                    ConnectManager.Companion.getInstance().getConnectParamForCallback()
+                    ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
                 param.lockData = lockParam
                 param.newPasscode = newPasscode
                 mApi.modifyAdminPasscode(newPasscode, lockParam)
@@ -984,7 +1008,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.ADD_IC_CARD, callback)
+            .isDeviceBusy(OperationType.ADD_IC_CARD, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (!isSupportThisOperation(lockParam)) {
@@ -997,7 +1021,7 @@ class TTLockClient private constructor() {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
 //                ConnectManager.getInstance().getConnectParamForCallback().setLockData(lockParam);
                 val param: ConnectParam =
-                    ConnectManager.Companion.getInstance().getConnectParamForCallback()
+                    ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
                 param.lockData = lockParam
                 param.validityInfo = validityInfo
                 mApi.addICCard(validityInfo, lockParam)
@@ -1071,12 +1095,12 @@ class TTLockClient private constructor() {
         validityInfo.setStartDate(startDate)
         validityInfo.setEndDate(endDate)
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.MODIFY_IC_CARD_PERIOD, callback)
+            .isDeviceBusy(OperationType.MODIFY_IC_CARD_PERIOD, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
 //                ConnectManager.getInstance().getConnectParamForCallback().setLockData(lockParam);
                 val param: ConnectParam =
-                    ConnectManager.Companion.getInstance().getConnectParamForCallback()
+                    ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
                 param.lockData = lockParam
                 param.validityInfo = validityInfo
                 param.attachmentNum = java.lang.Long.valueOf(cardNum)
@@ -1108,12 +1132,12 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.MODIFY_IC_CARD_PERIOD, callback)
+            .isDeviceBusy(OperationType.MODIFY_IC_CARD_PERIOD, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
 //                ConnectManager.getInstance().getConnectParamForCallback().setLockData(lockParam);
                 val param: ConnectParam =
-                    ConnectManager.Companion.getInstance().getConnectParamForCallback()
+                    ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
                 param.lockData = lockParam
                 param.validityInfo = validityInfo
                 param.attachmentNum = java.lang.Long.valueOf(cardNum)
@@ -1150,7 +1174,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_ALL_IC_CARDS, callback)
+            .isDeviceBusy(OperationType.GET_ALL_IC_CARDS, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
@@ -1184,7 +1208,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.DELETE_IC_CARD, callback)
+            .isDeviceBusy(OperationType.DELETE_IC_CARD, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
@@ -1209,7 +1233,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.LOSS_CARD, callback)
+            .isDeviceBusy(OperationType.LOSS_CARD, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
@@ -1240,7 +1264,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.CLEAR_ALL_IC_CARD, callback)
+            .isDeviceBusy(OperationType.CLEAR_ALL_IC_CARD, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
@@ -1280,7 +1304,7 @@ class TTLockClient private constructor() {
         validityInfo.setStartDate(startDate)
         validityInfo.setEndDate(endDate)
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.ADD_FINGERPRINT, callback)
+            .isDeviceBusy(OperationType.ADD_FINGERPRINT, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -1352,7 +1376,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_ALL_FINGERPRINTS, callback)
+            .isDeviceBusy(OperationType.GET_ALL_FINGERPRINTS, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
@@ -1386,7 +1410,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.DELETE_FINGERPRINT, callback)
+            .isDeviceBusy(OperationType.DELETE_FINGERPRINT, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
@@ -1421,7 +1445,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.CLEAR_ALL_FINGERPRINTS, callback)
+            .isDeviceBusy(OperationType.CLEAR_ALL_FINGERPRINTS, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
@@ -1463,7 +1487,7 @@ class TTLockClient private constructor() {
         validityInfo.setStartDate(startDate)
         validityInfo.setEndDate(endDate)
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.MODIFY_FINGEPRINT_PERIOD, callback)
+            .isDeviceBusy(OperationType.MODIFY_FINGEPRINT_PERIOD, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
@@ -1500,7 +1524,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.MODIFY_FINGEPRINT_PERIOD, callback)
+            .isDeviceBusy(OperationType.MODIFY_FINGEPRINT_PERIOD, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
@@ -1532,7 +1556,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.ENTER_DFU_MODE, callback)
+            .isDeviceBusy(OperationType.ENTER_DFU_MODE, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
@@ -1559,9 +1583,9 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_LOCK_CONFIG, callback)
+            .isDeviceBusy(OperationType.SET_LOCK_CONFIG, callback)
         ) {
-            //todo:支持判断
+            // todo:支持判断
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
                     .setLockData(lockParam)
@@ -1581,12 +1605,13 @@ class TTLockClient private constructor() {
                         switchOn,
                         lockParam
                     )
+                    else -> {}
                 }
             } else {
                 val param = ConnectParam()
                 param.lockData = lockParam
                 param.ttLockConfigType = ttLockConfigType
-                param.isLockModeEnable = switchOn
+                param.lockModeEnable = switchOn
                 ConnectManager.Companion.getInstance().storeConnectParamForCallback(param)
                 ConnectManager.Companion.getInstance().connect2Device(lockParam.lockMac)
             }
@@ -1604,9 +1629,9 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_LOCK_CONFIG, callback)
+            .isDeviceBusy(OperationType.GET_LOCK_CONFIG, callback)
         ) {
-            //todo:支持判断
+            // todo:支持判断
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
                     .setLockData(lockParam)
@@ -1622,6 +1647,7 @@ class TTLockClient private constructor() {
                         ttLockConfigType,
                         lockParam
                     )
+                    else -> {}
                 }
             } else {
                 val param = ConnectParam()
@@ -1651,12 +1677,12 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.WRITE_FINGERPRINT_DATA, callback)
+            .isDeviceBusy(OperationType.WRITE_FINGERPRINT_DATA, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
 //                ConnectManager.getInstance().getConnectParamForCallback().setLockData(lockParam);
                 val param: ConnectParam =
-                    ConnectManager.Companion.getInstance().getConnectParamForCallback()
+                    ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
                 param.lockData = lockParam
                 param.startDate = startDate
                 param.endDate = endDate
@@ -1695,7 +1721,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.RECOVERY_DATA, callback)
+            .isDeviceBusy(OperationType.RECOVERY_DATA, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
@@ -1727,7 +1753,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_PASSCODE_VISIBLE_STATE, callback)
+            .isDeviceBusy(OperationType.GET_PASSCODE_VISIBLE_STATE, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -1758,7 +1784,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_PASSCODE_VISIBLE_STATE, callback)
+            .isDeviceBusy(OperationType.SET_PASSCODE_VISIBLE_STATE, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -1772,7 +1798,7 @@ class TTLockClient private constructor() {
             } else {
                 val param = ConnectParam()
                 param.lockData = lockParam
-                param.isLockModeEnable = enable
+                param.lockModeEnable = enable
                 ConnectManager.Companion.getInstance().storeConnectParamForCallback(param)
                 ConnectManager.Companion.getInstance().connect2Device(lockParam.lockMac)
             }
@@ -1808,7 +1834,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_NB_SERVER, callback)
+            .isDeviceBusy(OperationType.SET_NB_SERVER, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
@@ -1842,7 +1868,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_PASSAGE_MODE, callback)
+            .isDeviceBusy(OperationType.GET_PASSAGE_MODE, callback)
         ) {
 //            LockData lockParam = GsonUtil.toObject(decodeData, LockData.class);
             if (!isSupportThisOperation(lockParam)) {
@@ -1873,7 +1899,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_PASSAGE_MODE, callback)
+            .isDeviceBusy(OperationType.SET_PASSAGE_MODE, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -1906,7 +1932,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.DELETE_PASSAGE_MODE, callback)
+            .isDeviceBusy(OperationType.DELETE_PASSAGE_MODE, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
@@ -1931,7 +1957,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.CLEAR_PASSAGE_MODE, callback)
+            .isDeviceBusy(OperationType.CLEAR_PASSAGE_MODE, callback)
         ) {
             if (ConnectManager.Companion.getInstance().isDeviceConnected(lockParam.lockMac)) {
                 ConnectManager.Companion.getInstance().getConnectParamForCallback()!!
@@ -1957,7 +1983,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_LOCK_FREEZE_STATE, callback)
+            .isDeviceBusy(OperationType.SET_LOCK_FREEZE_STATE, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -1971,7 +1997,7 @@ class TTLockClient private constructor() {
             } else {
                 val param = ConnectParam()
                 param.lockData = lockParam
-                param.isLockModeEnable = isOn
+                param.lockModeEnable = isOn
                 ConnectManager.Companion.getInstance().storeConnectParamForCallback(param)
                 ConnectManager.Companion.getInstance().connect2Device(lockParam.lockMac)
             }
@@ -1985,7 +2011,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_LOCK_FREEZE_STATE, callback)
+            .isDeviceBusy(OperationType.GET_LOCK_FREEZE_STATE, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2010,7 +2036,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_LIGHT_TIME, callback)
+            .isDeviceBusy(OperationType.SET_LIGHT_TIME, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2038,7 +2064,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_LIGHT_TIME, callback)
+            .isDeviceBusy(OperationType.GET_LIGHT_TIME, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2073,7 +2099,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_HOTEL_CARD_SECTION, callback)
+            .isDeviceBusy(OperationType.SET_HOTEL_CARD_SECTION, callback)
         ) {
             val hotelData = HotelData()
             hotelData.sector = DigitUtil.calSectorValue(sectorStr)
@@ -2101,7 +2127,7 @@ class TTLockClient private constructor() {
      */
     @Deprecated("")
     fun setHotelCardSector(
-        sectors: ArrayList<Int?>?,
+        sectors: ArrayList<Int>?,
         lockData: String?,
         callback: SetHotelCardSectorCallback
     ) {
@@ -2111,7 +2137,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_HOTEL_CARD_SECTION, callback)
+            .isDeviceBusy(OperationType.SET_HOTEL_CARD_SECTION, callback)
         ) {
             val hotelData = HotelData()
             hotelData.sector = DigitUtil.calSectorValue(sectors)
@@ -2146,16 +2172,16 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_HOTEL_DATA, callback)
+            .isDeviceBusy(OperationType.SET_HOTEL_DATA, callback)
         ) {
-            //TODO:
+            // TODO:
 //            if(!isSupportThisOperation(lockParam)){
 //                return;
 //            }
             try {
-                val hotelInfo: HotelInfo = DigitUtil.decodeHotelInfo(hotelData.hotelInfo)
-                hotelData.icKey = hotelInfo.icKey
-                hotelData.aesKey = hotelInfo.aesKey
+                val hotelInfo: HotelInfo = DigitUtil.decodeHotelInfo(hotelData.hotelInfo!!)
+                hotelData.icKey = hotelInfo.icKey!!
+                hotelData.aesKey = hotelInfo.aesKey!!
                 hotelData.hotelNumber = hotelInfo.hotelNumber
             } catch (exception: Exception) {
                 LogUtil.w("exception:$exception")
@@ -2185,7 +2211,7 @@ class TTLockClient private constructor() {
      * @param callback
      */
     fun setLiftControlableFloors(
-        controlableFloors: String?,
+        controlableFloors: String,
         lockData: String?,
         callback: SetLiftControlableFloorsCallback
     ) {
@@ -2194,12 +2220,12 @@ class TTLockClient private constructor() {
             callback.onFail(LockError.DATA_FORMAT_ERROR)
             return
         }
-        val hotelData = HotelData() //todo:抛出异常
+        val hotelData = HotelData() // todo:抛出异常
         hotelData.controlableFloors = DigitUtil.getControlableFloors(controlableFloors)
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_ELEVATOR_CONTROLABLE_FLOORS, callback)
+            .isDeviceBusy(OperationType.SET_ELEVATOR_CONTROLABLE_FLOORS, callback)
         ) {
-            //TODO:
+            // TODO:
 //            if(!isSupportThisOperation(lockParam)){
 //                return;
 //            }
@@ -2238,9 +2264,9 @@ class TTLockClient private constructor() {
         val hotelData = HotelData()
         hotelData.ttLiftWorkMode = ttLiftWorkMode
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_ELEVATOR_WORK_MODE, callback)
+            .isDeviceBusy(OperationType.SET_ELEVATOR_WORK_MODE, callback)
         ) {
-            //TODO:
+            // TODO:
 //            if(!isSupportThisOperation(lockParam)){
 //                return;
 //            }
@@ -2268,7 +2294,7 @@ class TTLockClient private constructor() {
      * @param callback
      */
     fun activateLiftFloors(
-        activateFloors: List<Int?>?,
+        activateFloors: List<Int>?,
         currentDate: Long,
         lockData: String?,
         callback: ActivateLiftFloorsCallback
@@ -2279,7 +2305,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.ACTIVATE_LIFT_FLOORS, callback)
+            .isDeviceBusy(OperationType.ACTIVATE_LIFT_FLOORS, callback)
         ) {
 //            if(!isSupportThisOperation(lockParam)){
 //                return;
@@ -2304,7 +2330,7 @@ class TTLockClient private constructor() {
     }
 
     fun setNBAwakeModes(
-        nbAwakeModeList: List<NBAwakeMode?>?,
+        nbAwakeModeList: List<NBAwakeMode>?,
         lockData: String?,
         callback: SetNBAwakeModesCallback
     ) {
@@ -2316,7 +2342,7 @@ class TTLockClient private constructor() {
         val nbAwakeConfig = NBAwakeConfig()
         nbAwakeConfig.setNbAwakeModeList(nbAwakeModeList)
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_NB_ACTIVATE_MODE, callback)
+            .isDeviceBusy(OperationType.SET_NB_ACTIVATE_MODE, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2344,7 +2370,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_NB_ACITATE_MODE, callback)
+            .isDeviceBusy(OperationType.GET_NB_ACITATE_MODE, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2363,7 +2389,7 @@ class TTLockClient private constructor() {
     }
 
     fun setNBAwakeTimes(
-        nbAwakeTimeList: List<NBAwakeTime?>?,
+        nbAwakeTimeList: List<NBAwakeTime>?,
         lockData: String?,
         callback: SetNBAwakeTimesCallback
     ) {
@@ -2375,7 +2401,7 @@ class TTLockClient private constructor() {
         val nbAwakeConfig = NBAwakeConfig()
         nbAwakeConfig.setNbAwakeTimeList(nbAwakeTimeList)
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_NB_ACTIVATE_CONFIG, callback)
+            .isDeviceBusy(OperationType.SET_NB_ACTIVATE_CONFIG, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2403,7 +2429,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_NB_ACTIVATE_CONFIG, callback)
+            .isDeviceBusy(OperationType.GET_NB_ACTIVATE_CONFIG, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2453,7 +2479,7 @@ class TTLockClient private constructor() {
         hotelData.paraType = HotelData.Companion.TYPE_POWER_SAVER_WORK_MODE
         hotelData.powerWorkModeValue = DigitUtil.getPowerWorkModeValue(powerWorkModeList)
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_HOTEL_DATA, callback)
+            .isDeviceBusy(OperationType.SET_HOTEL_DATA, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2483,7 +2509,7 @@ class TTLockClient private constructor() {
         val hotelData = HotelData()
         hotelData.paraType = HotelData.Companion.TYPE_POWER_SAVER_WORK_MODE
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_HOTEL_DATA, callback)
+            .isDeviceBusy(OperationType.GET_HOTEL_DATA, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2515,18 +2541,18 @@ class TTLockClient private constructor() {
     ) {
         var controlableLockMac = controlableLockMac
         val lockParam: LockData? = EncryptionUtil.parseLockData(lockData)
-        if (lockParam == null) { //todo:判断mac格式
+        if (lockParam == null) { // todo:判断mac格式
             callback.onFail(LockError.DATA_FORMAT_ERROR)
             return
         }
-        if (TextUtils.isEmpty(controlableLockMac)) { //取电取消关联锁的时候，可以把关联的mac设成取电自己本身
+        if (TextUtils.isEmpty(controlableLockMac)) { // 取电取消关联锁的时候，可以把关联的mac设成取电自己本身
             controlableLockMac = lockParam.getLockMac()
         }
         val hotelData = HotelData()
         hotelData.setControlableLockMac(controlableLockMac)
         hotelData.paraType = HotelData.Companion.TYPE_POWER_SAVER_CONTROLABLE_LOCK
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_HOTEL_DATA, callback)
+            .isDeviceBusy(OperationType.SET_HOTEL_DATA, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2554,7 +2580,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_UNLOCK_DIRECTION, callback)
+            .isDeviceBusy(OperationType.GET_UNLOCK_DIRECTION, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2583,7 +2609,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_UNLOCK_DIRECTION, callback)
+            .isDeviceBusy(OperationType.SET_UNLOCK_DIRECTION, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2610,12 +2636,12 @@ class TTLockClient private constructor() {
         callback: GetAccessoryBatteryLevelCallback
     ) {
         val lockParam: LockData? = EncryptionUtil.parseLockData(lockData)
-        if (lockParam == null || accessoryInfo == null) { //todo:判断mac格式
+        if (lockParam == null || accessoryInfo == null) { // todo:判断mac格式
             callback.onFail(LockError.DATA_FORMAT_ERROR)
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_ACCESSORY_BATTERY, callback)
+            .isDeviceBusy(OperationType.GET_ACCESSORY_BATTERY, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2648,7 +2674,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.ADD_KEY_FOB, callback)
+            .isDeviceBusy(OperationType.ADD_KEY_FOB, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2684,7 +2710,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.UPDATE_KEY_FOB_VALIDITY, callback)
+            .isDeviceBusy(OperationType.UPDATE_KEY_FOB_VALIDITY, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2715,7 +2741,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.DELETE_KEY_FOB, callback)
+            .isDeviceBusy(OperationType.DELETE_KEY_FOB, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2743,7 +2769,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.CLEAR_KEY_FOB, callback)
+            .isDeviceBusy(OperationType.CLEAR_KEY_FOB, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2773,7 +2799,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SCAN_WIFI, callback)
+            .isDeviceBusy(OperationType.SCAN_WIFI, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2810,7 +2836,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.CONFIGURE_WIFI_AP, callback)
+            .isDeviceBusy(OperationType.CONFIGURE_WIFI_AP, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2860,7 +2886,7 @@ class TTLockClient private constructor() {
             portNumber = 4999
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.CONFIGURE_SERVER, callback)
+            .isDeviceBusy(OperationType.CONFIGURE_SERVER, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2896,7 +2922,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_WIFI_INFO, callback)
+            .isDeviceBusy(OperationType.GET_WIFI_INFO, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2927,7 +2953,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.CONFIGURE_STATIC_IP, callback)
+            .isDeviceBusy(OperationType.CONFIGURE_STATIC_IP, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2959,7 +2985,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.SET_LOCK_SOUND_VOLUME, callback)
+            .isDeviceBusy(OperationType.SET_LOCK_SOUND_VOLUME, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -2990,7 +3016,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.GET_LOCK_SOUND_VOLUME, callback)
+            .isDeviceBusy(OperationType.GET_LOCK_SOUND_VOLUME, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -3021,7 +3047,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.ADD_DOOR_SENSOR, callback)
+            .isDeviceBusy(OperationType.ADD_DOOR_SENSOR, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -3054,7 +3080,7 @@ class TTLockClient private constructor() {
             return
         }
         if (!LockCallbackManager.Companion.getInstance()
-                .isDeviceBusy(OperationType.DELETE_DOOR_SENSOR, callback)
+            .isDeviceBusy(OperationType.DELETE_DOOR_SENSOR, callback)
         ) {
             if (!isSupportThisOperation(lockParam)) {
                 return
@@ -3090,7 +3116,7 @@ class TTLockClient private constructor() {
             lockData
         )
         if (!isSupport) {
-            val failCallback: LockCallback =
+            val failCallback: LockCallback? =
                 LockCallbackManager.Companion.getInstance().getCallback()
             if (failCallback != null) {
                 failCallback.onFail(LockError.LOCK_IS_NOT_SUPPORT)
@@ -3105,45 +3131,59 @@ class TTLockClient private constructor() {
         }
 
         private const val SPECIAL_VALUE_KEY = "specialValue"
-        private fun isSupportOperation(callbackType: Int, lockData: LockData): Boolean {
+        private fun isSupportOperation(callbackType: Int, lockData: LockData?): Boolean {
             var feature = 1
             when (callbackType) {
                 OperationType.GET_ADMIN_PASSCODE -> feature = FeatureValue.GET_ADMIN_CODE
-                OperationType.GET_MUTE_MODE_STATE, OperationType.SET_MUTE_MODE_STATE -> feature =
-                    FeatureValue.AUDIO_MANAGEMENT
+                OperationType.GET_MUTE_MODE_STATE, OperationType.SET_MUTE_MODE_STATE ->
+                    feature =
+                        FeatureValue.AUDIO_MANAGEMENT
                 OperationType.SET_AUTO_LOCK_PERIOD -> feature = FeatureValue.AUTO_LOCK.toInt()
-                OperationType.GET_REMOTE_UNLOCK_STATE, OperationType.SET_REMOTE_UNLOCK_STATE -> feature =
-                    FeatureValue.CONFIG_GATEWAY_UNLOCK
+                OperationType.GET_REMOTE_UNLOCK_STATE, OperationType.SET_REMOTE_UNLOCK_STATE ->
+                    feature =
+                        FeatureValue.CONFIG_GATEWAY_UNLOCK
                 OperationType.MODIFY_PASSCODE -> feature = FeatureValue.MODIFY_PASSCODE_FUNCTION
                 OperationType.ADD_FINGERPRINT -> feature = FeatureValue.FINGER_PRINT.toInt()
                 OperationType.ADD_IC_CARD -> feature = FeatureValue.IC.toInt()
                 OperationType.CREATE_CUSTOM_PASSCODE -> feature = FeatureValue.PASSCODE.toInt()
-                OperationType.GET_PASSCODE_VISIBLE_STATE, OperationType.SET_PASSCODE_VISIBLE_STATE -> feature =
-                    FeatureValue.PASSWORD_DISPLAY_OR_HIDE
+                OperationType.GET_PASSCODE_VISIBLE_STATE, OperationType.SET_PASSCODE_VISIBLE_STATE ->
+                    feature =
+                        FeatureValue.PASSWORD_DISPLAY_OR_HIDE
                 OperationType.SET_NB_SERVER -> feature = FeatureValue.NB_LOCK
-                OperationType.GET_PASSAGE_MODE, OperationType.SET_PASSAGE_MODE -> feature =
-                    FeatureValue.PASSAGE_MODE
-                OperationType.GET_LOCK_FREEZE_STATE, OperationType.SET_LOCK_FREEZE_STATE -> feature =
-                    FeatureValue.FREEZE_LOCK
-                OperationType.GET_LIGHT_TIME, OperationType.SET_LIGHT_TIME -> feature =
-                    FeatureValue.LAMP
-                OperationType.ADD_CYCLIC_IC_CARD, OperationType.ADD_CYCLIC_FINGERPRINT -> feature =
-                    FeatureValue.CYCLIC_IC_OR_FINGER_PRINT
-                OperationType.SET_NB_ACTIVATE_CONFIG, OperationType.GET_NB_ACTIVATE_CONFIG, OperationType.SET_NB_ACTIVATE_MODE, OperationType.GET_NB_ACITATE_MODE -> feature =
-                    FeatureValue.NB_ACTIVITE_CONFIGURATION
-                OperationType.SET_UNLOCK_DIRECTION, OperationType.GET_UNLOCK_DIRECTION -> feature =
-                    FeatureValue.UNLOCK_DIRECTION
+                OperationType.GET_PASSAGE_MODE, OperationType.SET_PASSAGE_MODE ->
+                    feature =
+                        FeatureValue.PASSAGE_MODE
+                OperationType.GET_LOCK_FREEZE_STATE, OperationType.SET_LOCK_FREEZE_STATE ->
+                    feature =
+                        FeatureValue.FREEZE_LOCK
+                OperationType.GET_LIGHT_TIME, OperationType.SET_LIGHT_TIME ->
+                    feature =
+                        FeatureValue.LAMP
+                OperationType.ADD_CYCLIC_IC_CARD, OperationType.ADD_CYCLIC_FINGERPRINT ->
+                    feature =
+                        FeatureValue.CYCLIC_IC_OR_FINGER_PRINT
+                OperationType.SET_NB_ACTIVATE_CONFIG, OperationType.GET_NB_ACTIVATE_CONFIG, OperationType.SET_NB_ACTIVATE_MODE, OperationType.GET_NB_ACITATE_MODE ->
+                    feature =
+                        FeatureValue.NB_ACTIVITE_CONFIGURATION
+                OperationType.SET_UNLOCK_DIRECTION, OperationType.GET_UNLOCK_DIRECTION ->
+                    feature =
+                        FeatureValue.UNLOCK_DIRECTION
                 OperationType.GET_ACCESSORY_BATTERY -> feature = FeatureValue.ACCESSORY_BATTERY
-                OperationType.ADD_KEY_FOB, OperationType.UPDATE_KEY_FOB_VALIDITY, OperationType.DELETE_KEY_FOB, OperationType.CLEAR_KEY_FOB -> feature =
-                    FeatureValue.WIRELESS_KEY_FOB
-                OperationType.SCAN_WIFI, OperationType.CONFIGURE_WIFI_AP, OperationType.CONFIGURE_SERVER, OperationType.GET_WIFI_INFO -> feature =
-                    FeatureValue.WIFI_LOCK
-                OperationType.CONFIGURE_STATIC_IP -> feature =
-                    FeatureValue.WIFI_LOCK_SUPPORT_STATIC_IP
-                OperationType.SET_LOCK_SOUND_VOLUME, OperationType.GET_LOCK_SOUND_VOLUME -> feature =
-                    FeatureValue.SOUND_VOLUME_AND_LANGUAGE_SETTING
-                OperationType.ADD_DOOR_SENSOR, OperationType.DELETE_DOOR_SENSOR -> feature =
-                    FeatureValue.DOOR_SENSOR
+                OperationType.ADD_KEY_FOB, OperationType.UPDATE_KEY_FOB_VALIDITY, OperationType.DELETE_KEY_FOB, OperationType.CLEAR_KEY_FOB ->
+                    feature =
+                        FeatureValue.WIRELESS_KEY_FOB
+                OperationType.SCAN_WIFI, OperationType.CONFIGURE_WIFI_AP, OperationType.CONFIGURE_SERVER, OperationType.GET_WIFI_INFO ->
+                    feature =
+                        FeatureValue.WIFI_LOCK
+                OperationType.CONFIGURE_STATIC_IP ->
+                    feature =
+                        FeatureValue.WIFI_LOCK_SUPPORT_STATIC_IP
+                OperationType.SET_LOCK_SOUND_VOLUME, OperationType.GET_LOCK_SOUND_VOLUME ->
+                    feature =
+                        FeatureValue.SOUND_VOLUME_AND_LANGUAGE_SETTING
+                OperationType.ADD_DOOR_SENSOR, OperationType.DELETE_DOOR_SENSOR ->
+                    feature =
+                        FeatureValue.DOOR_SENSOR
                 else -> {}
             }
             return FeatureValueUtil.isSupportFeature(lockData, feature)

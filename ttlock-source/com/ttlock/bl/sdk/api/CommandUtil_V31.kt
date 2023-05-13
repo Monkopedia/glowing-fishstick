@@ -1,11 +1,37 @@
 package com.ttlock.bl.sdk.api
 
-import android.text.TextUtils
+import android.util.Log
+import android.util.TextUtils
+import com.ttlock.bl.sdk.constant.APICommand
+import com.ttlock.bl.sdk.constant.ActionType
+import com.ttlock.bl.sdk.constant.AudioManage
+import com.ttlock.bl.sdk.constant.AutoLockOperate
+import com.ttlock.bl.sdk.constant.ConfigRemoteUnlock
 import com.ttlock.bl.sdk.constant.Constant
+import com.ttlock.bl.sdk.constant.CyclicOpType
+import com.ttlock.bl.sdk.constant.ICOperate
+import com.ttlock.bl.sdk.constant.KeyFobOperationType
+import com.ttlock.bl.sdk.constant.KeyboardPwdType
+import com.ttlock.bl.sdk.constant.LogOperate
 import com.ttlock.bl.sdk.constant.OperationType
+import com.ttlock.bl.sdk.constant.PassageModeOperate
+import com.ttlock.bl.sdk.constant.PwdOperateType
+import com.ttlock.bl.sdk.constant.RemoteControlManage
+import com.ttlock.bl.sdk.constant.SensitivityOperationType
+import com.ttlock.bl.sdk.entity.CyclicConfig
+import com.ttlock.bl.sdk.entity.HotelData
+import com.ttlock.bl.sdk.entity.NBAwakeConfig
+import com.ttlock.bl.sdk.entity.PwdInfoV3
+import com.ttlock.bl.sdk.entity.SoundVolume
+import com.ttlock.bl.sdk.entity.TransferData
+import com.ttlock.bl.sdk.entity.ValidityInfo
+import com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.GsonUtil
+import com.ttlock.bl.sdk.util.LogUtil
 import java.lang.Exception
 import java.util.*
 import kotlin.collections.LinkedHashSet
+import kotlin.experimental.or
 
 /**
  * Created by Smartlock on 2016/6/1.
@@ -18,14 +44,14 @@ internal object CommandUtil_V3 {
         unlockNumber: String?,
         aesKeyArray: ByteArray?
     ) {
-        val values = ByteArray(4 + 4 + 7) //4 + 4 + 7
+        val values = ByteArray(4 + 4 + 7) // 4 + 4 + 7
         val adminPwd = Integer.valueOf(adminPassword)
         val unlockPwd = Integer.valueOf(unlockNumber)
         val adminPwd_byte: ByteArray = DigitUtil.integerToByteArray(adminPwd)
         val unlockPwd_byte: ByteArray = DigitUtil.integerToByteArray(unlockPwd)
-        System.arraycopy(adminPwd_byte, 0, values, 0, adminPwd_byte.size) //4
-        System.arraycopy(unlockPwd_byte, 0, values, 4, unlockPwd_byte.size) //4
-        System.arraycopy(Constant.SCIENER.toByteArray(), 0, values, 8, 7) //7
+        System.arraycopy(adminPwd_byte, 0, values, 0, adminPwd_byte.size) // 4
+        System.arraycopy(unlockPwd_byte, 0, values, 4, unlockPwd_byte.size) // 4
+        System.arraycopy(Constant.SCIENER.toByteArray(), 0, values, 8, 7) // 7
         command.setData(values, aesKeyArray)
     }
 
@@ -93,7 +119,7 @@ internal object CommandUtil_V3 {
         aesKeyArray: ByteArray?,
         apiCommand: Int
     ) {
-        val values = ByteArray(17) //5+5+3+4
+        val values = ByteArray(17) // 5+5+3+4
         val time: ByteArray = DigitUtil.convertTimeToByteArray(sDateStr + eDateStr)
         System.arraycopy(time, 0, values, 0, 10)
         values[10] = (lockFlagPos shr 16 and 0xFF).toByte()
@@ -104,7 +130,7 @@ internal object CommandUtil_V3 {
         command.setData(values, aesKeyArray)
     }
 
-    fun calibationTime_V3(command: Command, timeStr: String?, aesKeyArray: ByteArray?) {
+    fun calibationTime_V3(command: Command, timeStr: String, aesKeyArray: ByteArray?) {
         val timeArray: ByteArray = DigitUtil.convertTimeToByteArray(timeStr)
         command.setData(timeArray, aesKeyArray)
     }
@@ -124,7 +150,7 @@ internal object CommandUtil_V3 {
         aesKeyArray: ByteArray?,
         timezoneRawOffSet: Long
     ) {
-        val values = ByteArray(4 + 4) //不再进行时间校准
+        val values = ByteArray(4 + 4) // 不再进行时间校准
         //        if(dateTime > 0) //有时间进行更新
 //            values = new byte[14];
 //        else
@@ -132,9 +158,9 @@ internal object CommandUtil_V3 {
         val sumI = Integer.valueOf(sum)
         val sumByteArray: ByteArray = DigitUtil.integerToByteArray(sumI)
         System.arraycopy(sumByteArray, 0, values, 0, sumByteArray.size)
-        //时间唯一标识
+        // 时间唯一标识
         var date = (dateTime / 1000).toInt()
-        if (dateTime <= 0) //没有时间值的用系统时间
+        if (dateTime <= 0) // 没有时间值的用系统时间
             date = (System.currentTimeMillis() / 1000).toInt()
         System.arraycopy(DigitUtil.integerToByteArray(date), 0, values, 4, 4)
         //        if(dateTime > 0) {//有时间的传时间
@@ -148,25 +174,25 @@ internal object CommandUtil_V3 {
         command.setData(values, aesKeyArray)
     }
 
-    fun activateLiftFloors(command: Command, psFromLock: ByteArray?, transferData: TransferData) {
+    fun activateLiftFloors(command: Command, psFromLock: ByteArray, transferData: TransferData) {
         command.setCommand(Command.Companion.COMM_UNLOCK)
         val psFromLockL: Long = DigitUtil.fourBytesToLong(psFromLock)
         val unlockKeyL: Long = java.lang.Long.valueOf(transferData.getUnlockKey())
         //        String sum = DigitUtil.getUnlockPwd_new(psFromLockL, unlockKeyL);
         var dateTime: Long = transferData.getUnlockDate()
-        if (dateTime <= 0) { //没有时间值的用系统时间
+        if (dateTime <= 0) { // 没有时间值的用系统时间
             dateTime = System.currentTimeMillis()
         }
         val timezoneRawOffSet: Long = transferData.getTimezoneOffSet()
-        val floors: List<Int> = transferData.getActivateFloors()
+        val floors: List<Int> = transferData.getActivateFloors()!!
         val floorSize = floors.size
-        val values = ByteArray(4 + 4 + 6 + 1 + floorSize) //不再进行时间校准
+        val values = ByteArray(4 + 4 + 6 + 1 + floorSize) // 不再进行时间校准
         val sumByteArray: ByteArray = DigitUtil.getUnlockPwdBytes_new(psFromLockL, unlockKeyL)
         System.arraycopy(sumByteArray, 0, values, 0, sumByteArray.size)
-        //时间唯一标识
+        // 时间唯一标识
         val date = (dateTime / 1000).toInt()
         System.arraycopy(DigitUtil.integerToByteArray(date), 0, values, 4, 4)
-        //根据时间偏移量重新计算时间
+        // 根据时间偏移量重新计算时间
         dateTime = dateTime + timezoneRawOffSet - TimeZone.getDefault()
             .getOffset(System.currentTimeMillis())
         val dateStr: String = DigitUtil.formateDateFromLong(dateTime, "yyMMddHHmmss")
@@ -198,7 +224,7 @@ internal object CommandUtil_V3 {
         val command = Command(lockType)
         command.setCommand(Command.Companion.COMM_INIT_PASSWORDS)
         val values = ByteArray(61)
-        //TODO:calender
+        // TODO:calender
         var year = Date().year + 1900
         val month = Date().month
         val day = Date().date
@@ -206,18 +232,18 @@ internal object CommandUtil_V3 {
             year--
         }
         LogUtil.d("year : $year", DBG)
-        val codeSet: MutableSet<*> = LinkedHashSet<Int>() //密码约定数
-        while (codeSet.size < 10) { //约定数最大不能超过1071
+        val codeSet: MutableSet<Int> = LinkedHashSet<Int>() // 密码约定数
+        while (codeSet.size < 10) { // 约定数最大不能超过1071
             codeSet.add(DigitUtil.getRandomIntegerByUpperBound(1071))
         }
-        val secretKeySet: MutableSet<*> = LinkedHashSet<String>() //映射数
+        val secretKeySet: MutableSet<String> = LinkedHashSet<String>() // 映射数
         while (secretKeySet.size < 10) {
             secretKeySet.add(DigitUtil.getCheckTable())
         }
         val codeIter: Iterator<Int> = codeSet.iterator()
         val secretKeyIter: Iterator<String> = secretKeySet.iterator()
         var offset = 0
-        //取年份后两位
+        // 取年份后两位
         values[offset++] = (year % 100).toByte()
 
 //        JsonArray jsonArray = new JsonArray();
@@ -261,43 +287,43 @@ internal object CommandUtil_V3 {
      */
     fun getOperateLog(command: Command, seq: Short, aesKeyArray: ByteArray?) {
         val values = ByteArray(2)
-        values[0] = (seq shr 8).toByte()
+        values[0] = (seq.toInt() shr 8).toByte()
         values[1] = seq.toByte()
         command.setData(values, aesKeyArray)
     }
 
     fun getValidKeyboardPassword(command: Command, seq: Short, aesKeyArray: ByteArray?) {
         val values = ByteArray(2)
-        values[0] = (seq shr 8).toByte()
+        values[0] = (seq.toInt() shr 8).toByte()
         values[1] = seq.toByte()
         command.setData(values, aesKeyArray)
     }
 
     fun parseKeyboardPwd(datas: ByteArray): Short {
-        //记录总长度
-        val recordTotalLen: Short = (datas[0] shl 8 or (datas[1] and 0xff)).toShort()
-        if (recordTotalLen.toInt() == 0) //没有记录可读取
+        // 记录总长度
+        val recordTotalLen: Short = (datas[0].toInt() shl 8 or (datas[1].toInt() and 0xff)).toShort()
+        if (recordTotalLen.toInt() == 0) // 没有记录可读取
             return recordTotalLen
-        //请求序号
-        val nextReq: Short = (datas[2] shl 8 or (datas[3] and 0xff)).toShort()
-        //记录长度index
+        // 请求序号
+        val nextReq: Short = (datas[2].toInt() shl 8 or (datas[3].toInt() and 0xff)).toShort()
+        // 记录长度index
         var dataIndex = 4
         while (dataIndex + 1 < datas.size) {
-            //单条记录长度
+            // 单条记录长度
             val recLen = datas[dataIndex++].toInt()
-            //密码类型
+            // 密码类型
             val pwdType = datas[dataIndex++].toInt()
-            //密码长度
+            // 密码长度
             val pwdLen = datas[dataIndex++].toInt()
-            //密码
+            // 密码
             val pwd = String(Arrays.copyOfRange(datas, dataIndex, dataIndex + pwdLen))
             dataIndex += pwdLen
-            //原始密码长度
+            // 原始密码长度
             val originPwdLen = datas[dataIndex++].toInt()
-            //原始密码
+            // 原始密码
             val originalPwd = String(Arrays.copyOfRange(datas, dataIndex, dataIndex + originPwdLen))
             dataIndex += originPwdLen
-            when (pwdType) {
+            when (pwdType.toByte()) {
                 KeyboardPwdType.PWD_TYPE_COUNT -> {
                     val count: Int = DigitUtil.fourBytesToLong(
                         Arrays.copyOfRange(
@@ -322,7 +348,7 @@ internal object CommandUtil_V3 {
 
     fun searchPwd(command: Command, seq: Short, aesKey: ByteArray?) {
         val values = ByteArray(2)
-        values[0] = (seq shr 8).toByte()
+        values[0] = (seq.toInt() shr 8).toByte()
         values[1] = seq.toByte()
         command.setData(values, aesKey)
     }
@@ -343,7 +369,7 @@ internal object CommandUtil_V3 {
         var values: ByteArray? = null
         var index = 0
         val calendar: Calendar = Calendar.getInstance()
-        //根据时间偏移量计算时间
+        // 根据时间偏移量计算时间
         val timeZone: TimeZone = TimeZone.getDefault()
         if (timeZone.inDaylightTime(Date(System.currentTimeMillis()))) timezoneOffset -= timeZone.getDSTSavings()
             .toLong()
@@ -437,10 +463,10 @@ internal object CommandUtil_V3 {
             }
             PwdOperateType.PWD_OPERATE_TYPE_MODIFY -> {
                 val originalPwdLen = originalPwd.length.toByte()
-                //新密码长度
+                // 新密码长度
                 var newPwdLen: Byte = 0
                 if (!TextUtils.isEmpty(newPwd)) newPwdLen = newPwd.length.toByte()
-                values = if (startDate <= 0 || endDate <= 0) //不修改期限
+                values = if (startDate <= 0 || endDate <= 0) // 不修改期限
                     ByteArray(1 + 1 + 1 + originalPwdLen + 1 + newPwdLen) else ByteArray(1 + 1 + 1 + originalPwdLen + 1 + newPwdLen + 5 + 5)
                 values[index++] = pwdOperateType
                 values[index++] = keyboardPwdType
@@ -456,7 +482,7 @@ internal object CommandUtil_V3 {
                 values[index++] = newPwdLen
                 System.arraycopy(newPwd.toByteArray(), 0, values, index, newPwdLen.toInt())
                 index += newPwdLen.toInt()
-                if (!(startDate <= 0 || endDate <= 0)) { //修改期限
+                if (!(startDate <= 0 || endDate <= 0)) { // 修改期限
                     values[index++] = (calendar.get(Calendar.YEAR) % 100).toByte()
                     values[index++] = (calendar.get(Calendar.MONTH) + 1).toByte()
                     values[index++] = calendar.get(Calendar.DAY_OF_MONTH).toByte()
@@ -473,19 +499,22 @@ internal object CommandUtil_V3 {
             }
             PwdOperateType.PWD_OPERATE_TYPE_RECOVERY -> {
                 val originalPwdLen = originalPwd.length.toByte()
-                //新密码长度
+                // 新密码长度
                 var newPwdLen: Byte = 0
                 if (!TextUtils.isEmpty(newPwd)) newPwdLen = newPwd.length.toByte()
                 LogUtil.e("originalPwd:$originalPwd", DBG)
                 LogUtil.e("newPwd:$newPwd", DBG)
                 LogUtil.e("keyboardPwdType:$keyboardPwdType", DBG)
                 when (keyboardPwdType) {
-                    KeyboardPwdType.PWD_TYPE_COUNT, KeyboardPwdType.PWD_TYPE_PERMANENT -> values =
-                        ByteArray(1 + 1 + 1 + originalPwdLen + 1 + newPwdLen + 5)
-                    KeyboardPwdType.PWD_TYPE_CIRCLE -> values =
-                        ByteArray(1 + 1 + 1 + originalPwdLen + 1 + newPwdLen + 5 + 2)
-                    KeyboardPwdType.PWD_TYPE_PERIOD -> values =
-                        ByteArray(1 + 1 + 1 + originalPwdLen + 1 + newPwdLen + 5 + 5)
+                    KeyboardPwdType.PWD_TYPE_COUNT, KeyboardPwdType.PWD_TYPE_PERMANENT ->
+                        values =
+                            ByteArray(1 + 1 + 1 + originalPwdLen + 1 + newPwdLen + 5)
+                    KeyboardPwdType.PWD_TYPE_CIRCLE ->
+                        values =
+                            ByteArray(1 + 1 + 1 + originalPwdLen + 1 + newPwdLen + 5 + 2)
+                    KeyboardPwdType.PWD_TYPE_PERIOD ->
+                        values =
+                            ByteArray(1 + 1 + 1 + originalPwdLen + 1 + newPwdLen + 5 + 5)
                 }
                 values!![index++] = pwdOperateType
                 values[index++] = keyboardPwdType
@@ -502,7 +531,7 @@ internal object CommandUtil_V3 {
                 System.arraycopy(newPwd.toByteArray(), 0, values, index, newPwdLen.toInt())
                 index += newPwdLen.toInt()
 
-                //起始时间
+                // 起始时间
                 values[index++] = (calendar.get(Calendar.YEAR) % 100).toByte()
                 values[index++] = (calendar.get(Calendar.MONTH) + 1).toByte()
                 values[index++] = calendar.get(Calendar.DAY_OF_MONTH).toByte()
@@ -535,20 +564,20 @@ internal object CommandUtil_V3 {
     }
 
     fun parseOperateLog(
-        logOperates: MutableList<LogOperate?>,
+        logOperates: MutableList<LogOperate>,
         datas: ByteArray,
         timezoneOffSet: Long
     ): Short {
-        //记录总长度
+        // 记录总长度
         var timezoneOffSet = timezoneOffSet
         LogUtil.w("begin---------------", DBG)
         //        LogUtil.e("datas:" + DigitUtil.byteArrayToHexString(datas), DBG);
-        val recordTotalLen: Int = datas[0] shl 8 or (datas[1] and 0xff) and 0xffff
-        if (recordTotalLen == 0) //没有记录可读
-            return 0xFFF0.toShort() //记录读取完成
-        val nextReq: Short = (datas[2] shl 8 or (datas[3] and 0xff)).toShort()
+        val recordTotalLen: Int = datas[0].toInt() shl 8 or (datas[1].toInt() and 0xff) and 0xffff
+        if (recordTotalLen == 0) // 没有记录可读
+            return 0xFFF0.toShort() // 记录读取完成
+        val nextReq: Short = (datas[2].toInt() shl 8 or (datas[3].toInt() and 0xff)).toShort()
 
-        //索引下标
+        // 索引下标
         var dataIndex = 4
         //        LogUtil.d("recordTotalLen:" + recordTotalLen, DBG);
 //        LogUtil.d("nextReq:" + nextReq, DBG);
@@ -559,29 +588,29 @@ internal object CommandUtil_V3 {
 //                LogUtil.d("dataIndex:" + dataIndex, DBG);
                 val logOperate = LogOperate()
 
-                //单条记录长度
+                // 单条记录长度
                 val recLen = datas[dataIndex++].toInt()
-                //下一条记录开始的索引值
+                // 下一条记录开始的索引值
                 val nextRecIndex = dataIndex + recLen
                 //                LogUtil.d("recLen:" + recLen, DBG);
-                //操作类型
+                // 操作类型
                 val operateType = datas[dataIndex++].toInt()
                 //                LogUtil.d("operateType:" + operateType, DBG);
                 logOperate.setRecordType(operateType)
-                //年
+                // 年
                 var year = datas[dataIndex++] + 2000
-                //月
+                // 月
                 var month = datas[dataIndex++].toInt()
-                //日
+                // 日
                 var day = datas[dataIndex++].toInt()
-                //小时
+                // 小时
                 var hour = datas[dataIndex++].toInt()
-                //分钟
+                // 分钟
                 var minute = datas[dataIndex++].toInt()
-                //秒
+                // 秒
                 val second = datas[dataIndex++].toInt()
                 val calendar: Calendar = Calendar.getInstance()
-                //根据时间偏移量计算时间
+                // 根据时间偏移量计算时间
                 val timeZone: TimeZone = TimeZone.getDefault()
                 LogUtil.d("timezoneOffSet:$timezoneOffSet", DBG)
                 if (timeZone.inDaylightTime(Date(System.currentTimeMillis()))) timezoneOffSet -= timeZone.getDSTSavings()
@@ -598,10 +627,10 @@ internal object CommandUtil_V3 {
 //                LogUtil.d("minute:" + minute, DBG);
 //                LogUtil.d("second:" + second, DBG);
 
-                //电量
+                // 电量
                 val electricQuantity = datas[dataIndex++].toInt()
                 logOperate.setElectricQuantity(electricQuantity)
-                when (operateType) {
+                when (operateType.toByte()) {
                     LogOperate.Companion.OPERATE_TYPE_MOBILE_UNLOCK, LogOperate.Companion.OPERATE_BLE_LOCK, LogOperate.Companion.GATEWAY_UNLOCK, LogOperate.Companion.APP_UNLOCK_FAILED_LOCK_REVERSE -> {
                         var uid: Int
                         var uuid: Int
@@ -653,20 +682,19 @@ internal object CommandUtil_V3 {
                     }
                     LogOperate.Companion.OPERATE_TYPE_KEYBOARD_PASSWORD_UNLOCK, LogOperate.Companion.OPERATE_TYPE_USE_DELETE_CODE, LogOperate.Companion.OPERATE_TYPE_PASSCODE_EXPIRED, LogOperate.Companion.OPERATE_TYPE_SPACE_INSUFFICIENT, LogOperate.Companion.OPERATE_TYPE_PASSCODE_IN_BLACK_LIST, LogOperate.Companion.PASSCODE_LOCK, LogOperate.Companion.PASSCODE_UNLOCK_FAILED_LOCK_REVERSE -> {
 
-
 //                        LogUtil.d("dataIndex:" + dataIndex, DBG);
-                        //原始密码长度
+                        // 原始密码长度
                         val originalPwdLen = datas[dataIndex++].toInt()
                         //                        LogUtil.d("originalPwdLen:" + originalPwdLen, DBG);
-                        //原始密码
+                        // 原始密码
                         val originalPwd =
                             String(Arrays.copyOfRange(datas, dataIndex, dataIndex + originalPwdLen))
                         //                        LogUtil.d("originalPwd:" + originalPwd, DBG);
                         dataIndex += originalPwdLen
-                        //开锁密码长度
+                        // 开锁密码长度
                         val unlockPwdLen = datas[dataIndex++].toInt()
                         //                        LogUtil.d("unlockPwdLen:" + unlockPwdLen, DBG);
-                        //开锁密码
+                        // 开锁密码
                         val unlockPwd =
                             String(Arrays.copyOfRange(datas, dataIndex, dataIndex + unlockPwdLen))
                         //                        LogUtil.d("unlockPwd:" + unlockPwd, DBG);
@@ -676,15 +704,15 @@ internal object CommandUtil_V3 {
                     }
                     LogOperate.Companion.OPERATE_TYPE_KEYBOARD_MODIFY_PASSWORD -> {
 
-                        //原始密码长度
+                        // 原始密码长度
                         val originalPwdLen = datas[dataIndex++].toInt()
-                        //原始密码
+                        // 原始密码
                         val originalPwd =
                             String(Arrays.copyOfRange(datas, dataIndex, dataIndex + originalPwdLen))
                         dataIndex += originalPwdLen
-                        //新密码长度
+                        // 新密码长度
                         val newPwdLen = datas[dataIndex++].toInt()
-                        //新密码
+                        // 新密码
                         val newPwd =
                             String(Arrays.copyOfRange(datas, dataIndex, dataIndex + newPwdLen))
                         dataIndex += newPwdLen
@@ -693,15 +721,15 @@ internal object CommandUtil_V3 {
                     }
                     LogOperate.Companion.OPERATE_TYPE_KEYBOARD_REMOVE_SINGLE_PASSWORD -> {
 
-                        //原始密码长度
+                        // 原始密码长度
                         val originalPwdLen = datas[dataIndex++].toInt()
-                        //原始密码
+                        // 原始密码
                         val originalPwd =
                             String(Arrays.copyOfRange(datas, dataIndex, dataIndex + originalPwdLen))
                         dataIndex += originalPwdLen
-                        //删除密码长度
+                        // 删除密码长度
                         val removePwdLen = datas[dataIndex++].toInt()
-                        //删除密码
+                        // 删除密码
                         val removePwd =
                             String(Arrays.copyOfRange(datas, dataIndex, dataIndex + removePwdLen))
                         dataIndex += removePwdLen
@@ -710,9 +738,9 @@ internal object CommandUtil_V3 {
                     }
                     LogOperate.Companion.OPERATE_TYPE_ERROR_PASSWORD_UNLOCK -> {
 
-                        //错误开锁密码长度
+                        // 错误开锁密码长度
                         val errUnlockPwdLen = datas[dataIndex++].toInt()
-                        //错误开锁密码
+                        // 错误开锁密码
                         val errUnlockPwd = String(
                             Arrays.copyOfRange(
                                 datas,
@@ -746,15 +774,15 @@ internal object CommandUtil_V3 {
                     }
                     LogOperate.Companion.OPERATE_TYPE_KEYBOARD_PASSWORD_KICKED -> {
 
-                        //原始密码长度
+                        // 原始密码长度
                         val originalPwdLen = datas[dataIndex++].toInt()
-                        //原始密码
+                        // 原始密码
                         val originalPwd =
                             String(Arrays.copyOfRange(datas, dataIndex, dataIndex + originalPwdLen))
                         dataIndex += originalPwdLen
-                        //被挤掉的密码长度
+                        // 被挤掉的密码长度
                         val kickedPwdLen = datas[dataIndex++].toInt()
-                        //删除密码
+                        // 删除密码
                         val kickedPwd =
                             String(Arrays.copyOfRange(datas, dataIndex, dataIndex + kickedPwdLen))
                         dataIndex += kickedPwdLen
@@ -795,12 +823,12 @@ internal object CommandUtil_V3 {
                         )
                         logOperate.setPassword(FNNo.toString())
                         dataIndex += 6
-                        if (dataIndex < nextRecIndex) { //还有密码记录
+                        if (dataIndex < nextRecIndex) { // 还有密码记录
                             val pwdLen = datas[dataIndex++].toInt()
                             val pwd =
                                 String(Arrays.copyOfRange(datas, dataIndex, dataIndex + pwdLen))
                             dataIndex += pwdLen
-                            //TODO:保存密码记录
+                            // TODO:保存密码记录
                         }
                     }
                     LogOperate.Companion.WIRELESS_KEY_FOB -> {
@@ -817,7 +845,7 @@ internal object CommandUtil_V3 {
                         logOperate.setAccessoryElectricQuantity(datas[dataIndex++].toInt())
                     }
                     LogOperate.Companion.WIRELESS_KEY_PAD -> {
-                        mac = DigitUtil.getMacString(
+                        val mac = DigitUtil.getMacString(
                             Arrays.copyOfRange(
                                 datas,
                                 dataIndex,
@@ -833,7 +861,7 @@ internal object CommandUtil_V3 {
                 //                LogUtil.d("logOperate:" + logOperate);
                 LogUtil.w("end", DBG)
                 logOperates.add(logOperate)
-                //增强兼容性
+                // 增强兼容性
                 dataIndex = nextRecIndex
             }
         } catch (e: Exception) {
@@ -856,7 +884,7 @@ internal object CommandUtil_V3 {
         command: Command,
         ICOp: Byte,
         seq: Short,
-        cardNoStr: String,
+        cardNoStr: String?,
         startDate: Long,
         endDate: Long,
         aesKey: ByteArray?,
@@ -869,13 +897,13 @@ internal object CommandUtil_V3 {
             ICOperate.IC_SEARCH -> {
                 values = ByteArray(3)
                 values[0] = ICOp
-                values[1] = (seq shr 8).toByte()
+                values[1] = (seq.toInt() shr 8).toByte()
                 values[2] = seq.toByte()
             }
             ICOperate.ADD -> if (!TextUtils.isEmpty(cardNoStr)) {
-                values = if (cardNoStr.length > 10) ByteArray(19) else ByteArray(15)
+                values = if (cardNoStr!!.length > 10) ByteArray(19) else ByteArray(15)
                 values[0] = ICOp
-                if (startDate == 0L || endDate == 0L) { //有时间
+                if (startDate == 0L || endDate == 0L) { // 有时间
                     startDate = CommandUtil.permanentStartDate
                     endDate = CommandUtil.permanentEndDate
                 }
@@ -887,7 +915,7 @@ internal object CommandUtil_V3 {
                     DigitUtil.integerToByteArray(cardNo.toInt())
                 }
 
-                //使用时间偏移量重新计算时间
+                // 使用时间偏移量重新计算时间
                 startDate = startDate + timezoneOffSet - TimeZone.getDefault()
                     .getOffset(System.currentTimeMillis())
                 endDate = endDate + timezoneOffSet - TimeZone.getDefault()
@@ -899,7 +927,7 @@ internal object CommandUtil_V3 {
                 LogUtil.d("eDate:$eDate", DBG)
                 System.arraycopy(cardBytes, 0, values, 1, cardBytes.size)
                 System.arraycopy(time, 0, values, 1 + cardBytes.size, 10)
-            } else { //进入添加模式
+            } else { // 进入添加模式
                 values = ByteArray(1)
                 values[0] = ICOp
             }
@@ -908,16 +936,16 @@ internal object CommandUtil_V3 {
                 values[0] = ICOp
             }
             ICOperate.MODIFY -> {
-                values = if (cardNoStr.length > 10) ByteArray(19) else ByteArray(15)
+                values = if (cardNoStr!!.length > 10) ByteArray(19) else ByteArray(15)
                 values[0] = ICOp
                 val cardNo = java.lang.Long.valueOf(cardNoStr)
                 val cardBytes: ByteArray
-                cardBytes = if (cardNoStr.length > 10) {
+                cardBytes = if (cardNoStr!!.length > 10) {
                     DigitUtil.longToByteArrayWithLen(cardNo, 8)
                 } else {
                     DigitUtil.integerToByteArray(cardNo.toInt())
                 }
-                //使用时间偏移量重新计算时间
+                // 使用时间偏移量重新计算时间
                 startDate = startDate + timezoneOffSet - TimeZone.getDefault()
                     .getOffset(System.currentTimeMillis())
                 endDate = endDate + timezoneOffSet - TimeZone.getDefault()
@@ -932,13 +960,13 @@ internal object CommandUtil_V3 {
                 LogUtil.d(sDate + eDate, DBG)
             }
             ICOperate.DELETE -> {
-                values = if (cardNoStr.length > 10) ByteArray(9) else ByteArray(5)
+                values = if (cardNoStr!!.length > 10) ByteArray(9) else ByteArray(5)
                 values[0] = ICOp
-                cardNo = java.lang.Long.valueOf(cardNoStr)
-                if (cardNoStr.length > 10) {
-                    cardBytes = DigitUtil.longToByteArrayWithLen(cardNo, 8)
+                val cardNo = java.lang.Long.valueOf(cardNoStr)
+                val cardBytes = if (cardNoStr.length > 10) {
+                    DigitUtil.longToByteArrayWithLen(cardNo, 8)
                 } else {
-                    cardBytes = DigitUtil.integerToByteArray(cardNo.toInt())
+                    DigitUtil.integerToByteArray(cardNo.toInt())
                 }
                 System.arraycopy(cardBytes, 0, values, 1, cardBytes.size)
             }
@@ -975,10 +1003,10 @@ internal object CommandUtil_V3 {
             ICOperate.FR_SEARCH -> {
                 values = ByteArray(3)
                 values[0] = FROp
-                values[1] = (seq shr 8).toByte()
+                values[1] = (seq.toInt() shr 8).toByte()
                 values[2] = seq.toByte()
             }
-            ICOperate.ADD -> if (FRNo > 0) { //恢复
+            ICOperate.ADD -> if (FRNo > 0) { // 恢复
                 values = ByteArray(17)
                 values[0] = FROp
                 val FRBytes: ByteArray = DigitUtil.longToByteArrayWithLen(FRNo, 6)
@@ -987,7 +1015,7 @@ internal object CommandUtil_V3 {
                     startDate = CommandUtil.permanentStartDate
                     endDate = CommandUtil.permanentEndDate
                 }
-                //使用时间偏移量重新计算时间
+                // 使用时间偏移量重新计算时间
                 startDate = startDate + timezoneOffSet - TimeZone.getDefault()
                     .getOffset(System.currentTimeMillis())
                 endDate = endDate + timezoneOffSet - TimeZone.getDefault()
@@ -997,7 +1025,7 @@ internal object CommandUtil_V3 {
                 val time: ByteArray = DigitUtil.convertTimeToByteArray(sDate + eDate)
                 System.arraycopy(FRBytes, 0, values, 1, 6)
                 System.arraycopy(time, 0, values, 7, 10)
-            } else { //添加
+            } else { // 添加
                 values = ByteArray(1)
                 values[0] = FROp
             }
@@ -1011,7 +1039,7 @@ internal object CommandUtil_V3 {
                 LogUtil.d("FRNo:$FRNo", DBG)
                 val FRBytes: ByteArray = DigitUtil.longToByteArrayWithLen(FRNo, 6)
                 LogUtil.d("FRBytes:" + DigitUtil.sixBytesToLong(FRBytes), DBG)
-                //使用时间偏移量重新计算时间
+                // 使用时间偏移量重新计算时间
                 startDate = startDate + timezoneOffSet - TimeZone.getDefault()
                     .getOffset(System.currentTimeMillis())
                 endDate = endDate + timezoneOffSet - TimeZone.getDefault()
@@ -1032,7 +1060,8 @@ internal object CommandUtil_V3 {
                             FRNo,
                             6
                         )
-                    ), DBG
+                    ),
+                    DBG
                 )
                 System.arraycopy(DigitUtil.longToByteArrayWithLen(FRNo, 6), 0, values, 1, 6)
                 LogUtil.d(DigitUtil.byteArrayToHexString(values), DBG)
@@ -1063,7 +1092,7 @@ internal object CommandUtil_V3 {
             AutoLockOperate.MODIFY -> {
                 values = ByteArray(3)
                 values[0] = op
-                values[1] = (time shr 8).toByte()
+                values[1] = (time.toInt() shr 8).toByte()
                 values[2] = time.toByte()
             }
         }
@@ -1087,7 +1116,7 @@ internal object CommandUtil_V3 {
             AutoLockOperate.MODIFY -> {
                 values = ByteArray(4)
                 values[0] = op
-                //0xffff不修改自动闭锁时间
+                // 0xffff不修改自动闭锁时间
                 values[1] = 0xff.toByte()
                 values[2] = 0xff.toByte()
                 values[3] = opValue
@@ -1109,7 +1138,7 @@ internal object CommandUtil_V3 {
         val sumI = Integer.valueOf(sum)
         val sumByteArray: ByteArray = DigitUtil.integerToByteArray(sumI)
         System.arraycopy(sumByteArray, 0, values, 0, sumByteArray.size)
-        //时间唯一标识
+        // 时间唯一标识
         val date = (dateTime / 1000).toInt()
         System.arraycopy(DigitUtil.integerToByteArray(date), 0, values, 4, 4)
         command.setData(values, aesKeyArray)
@@ -1123,7 +1152,7 @@ internal object CommandUtil_V3 {
      */
     fun screenPasscodeManage(command: Command, opType: Int, aesKeyArray: ByteArray?) {
         val values: ByteArray
-        values = if (opType == 1) { //查询
+        values = if (opType == 1) { // 查询
             byteArrayOf(1)
         } else {
             byteArrayOf(2, (opType - 2).toByte())
@@ -1188,8 +1217,8 @@ internal object CommandUtil_V3 {
     fun setLockSound(command: Command, transferData: TransferData) {
         command.setCommand(Command.Companion.COMM_AUDIO_MANAGE)
         var values: ByteArray? = null
-        var soundVolume: SoundVolume = transferData.getSoundVolume()
-        //为空的情况当做关闭
+        var soundVolume: SoundVolume? = transferData.getSoundVolume()
+        // 为空的情况当做关闭
         soundVolume = if (soundVolume == null) SoundVolume.OFF else soundVolume
         when (soundVolume) {
             SoundVolume.OFF -> {
@@ -1207,7 +1236,7 @@ internal object CommandUtil_V3 {
                 values[0] = AudioManage.MODIFY
                 values[1] = AudioManage.TURN_ON.toByte()
                 values[2] = soundVolume.getValue().toByte()
-                values[3] = 0 //当前无语言设置
+                values[3] = 0 // 当前无语言设置
             }
         }
         command.setData(values, transferData.getAesKeyArray())
@@ -1272,7 +1301,7 @@ internal object CommandUtil_V3 {
         val addByte = address.toByteArray()
         val values = ByteArray(2 + addByte.size)
         LogUtil.d("port:$port", DBG)
-        values[0] = (port shr 1).toByte()
+        values[0] = (port.toInt() shr 1).toByte()
         values[1] = port.toByte()
         System.arraycopy(addByte, 0, values, 2, address.length)
         command.setData(values, aesKeyArray)
@@ -1289,9 +1318,10 @@ internal object CommandUtil_V3 {
         command.setCommand(Command.Companion.COMM_CONFIGURE_HOTEL_DATA)
         var values: ByteArray? = null
         when (op) {
-            HotelData.Companion.GET -> values =
-                byteArrayOf(HotelData.Companion.GET.toByte(), parType.toByte())
-            HotelData.Companion.SET -> when (parType) {
+            HotelData.Companion.GET ->
+                values =
+                    byteArrayOf(HotelData.Companion.GET.toByte(), parType.toByte())
+            HotelData.Companion.SET -> when (parType.toByte()) {
                 HotelData.Companion.TYPE_IC_KEY -> {
                     values = ByteArray(1 + 1 + 1 + 6)
                     run {
@@ -1333,7 +1363,7 @@ internal object CommandUtil_V3 {
                     values[0] = HotelData.Companion.SET.toByte()
                     values[1] = parType.toByte()
                     values[2] = 2
-                    values[3] = (hotelData.sector shr 8).toByte()
+                    values[3] = (hotelData.sector.toInt() shr 8).toByte()
                     values[4] = hotelData.sector.toByte()
                 }
                 HotelData.Companion.TYPE_ELEVATOR_CONTROLABLE_FLOORS -> {
@@ -1348,10 +1378,10 @@ internal object CommandUtil_V3 {
                     values[0] = HotelData.Companion.SET.toByte()
                     values[1] = parType.toByte()
                     values[2] = 9
-                    values[3] = hotelData.ttLiftWorkMode.getValue().toByte()
+                    values[3] = hotelData.ttLiftWorkMode!!.getValue().toByte()
                     var i = 4
                     while (i < values.size) {
-                        //0表示控制 1表示不控制
+                        // 0表示控制 1表示不控制
                         values[i] = 0
                         i++
                     }
@@ -1369,7 +1399,7 @@ internal object CommandUtil_V3 {
                     values[1] = parType.toByte()
                     values[2] = 6
                     val macBytes: ByteArray =
-                        DigitUtil.macDividerByColonToByteArray(hotelData.getControlableLockMac())
+                        DigitUtil.macDividerByColonToByteArray(hotelData.getControlableLockMac()!!)!!
                     System.arraycopy(macBytes, 0, values, 3, 6)
                 }
             }
@@ -1386,7 +1416,7 @@ internal object CommandUtil_V3 {
         val address: String = transferData.getAddress()
         val addByte = address.toByteArray()
         val values = ByteArray(2 + addByte.size)
-        values[0] = (port shr 8).toByte()
+        values[0] = (port.toInt() shr 8).toByte()
         values[1] = port.toByte()
         System.arraycopy(addByte, 0, values, 2, addByte.size)
         command.setData(values, transferData.getAesKeyArray())
@@ -1412,7 +1442,7 @@ internal object CommandUtil_V3 {
         if (frData.size - srcPos < packetLen) packetLen = frData.size - srcPos
         val values = ByteArray(1 + 2 + packetLen)
         values[0] = ICOperate.WRITE_FR
-        values[1] = (seq shr 8).toByte()
+        values[1] = (seq.toInt() shr 8).toByte()
         values[2] = seq.toByte()
         LogUtil.d("packetLen:$packetLen")
         System.arraycopy(frData, srcPos, values, 3, packetLen)
@@ -1433,7 +1463,7 @@ internal object CommandUtil_V3 {
         LogUtil.d("endDate:$endDate", DBG)
         LogUtil.d("num:$num", DBG)
 
-        //根据时间偏移量重新计算时间
+        // 根据时间偏移量重新计算时间
         startDate = startDate + transferData.getTimezoneOffSet() - TimeZone.getDefault().getOffset(
             System.currentTimeMillis()
         )
@@ -1538,7 +1568,7 @@ internal object CommandUtil_V3 {
             OperationType.MODIFY -> {
                 values = ByteArray(3)
                 values[0] = opType
-                values[1] = (opValue shr 8).toByte()
+                values[1] = (opValue.toInt() shr 8).toByte()
                 values[2] = opValue.toByte()
             }
         }
@@ -1578,7 +1608,7 @@ internal object CommandUtil_V3 {
     fun deadLock(
         command: Command,
         unlockKey: String?,
-        psFromLock: ByteArray?,
+        psFromLock: ByteArray,
         aesKeyArray: ByteArray?,
         unlockDate: Long
     ) {
@@ -1591,7 +1621,7 @@ internal object CommandUtil_V3 {
         val sumByteArray: ByteArray = DigitUtil.getUnlockPwdBytes_new(psFromLockL, unlockKeyL)
         val values = ByteArray(8)
         System.arraycopy(sumByteArray, 0, values, 0, sumByteArray.size)
-        //时间唯一标识
+        // 时间唯一标识
         val date = (unlockDate / 1000).toInt()
         System.arraycopy(DigitUtil.integerToByteArray(date), 0, values, 4, 4)
         command.setData(values, aesKeyArray)
@@ -1611,7 +1641,7 @@ internal object CommandUtil_V3 {
         userLen = if (user > 0 && user <= 0xffffffffL) 4 else 8
         LogUtil.d("userLen:$userLen")
         val userBytes: ByteArray = DigitUtil.longToByteArrayWithLen(user, userLen.toInt())
-        val values = ByteArray(1 + 1 + 1 + userLen + 1 + 1 + 1 + 8) //TODO:
+        val values = ByteArray(1 + 1 + 1 + userLen + 1 + 1 + 1 + 8) // TODO:
         var index = 0
         values[index++] = CyclicOpType.ADD
         values[index++] = CyclicOpType.USER_TYPE_IC
@@ -1620,7 +1650,7 @@ internal object CommandUtil_V3 {
         index += userLen.toInt()
         values[index++] = loopType
         values[index++] = cyclicConfig.weekDay.toByte()
-        values[index++] = 0 //月日的时候用
+        values[index++] = 0 // 月日的时候用
         values[index++] = (cyclicConfig.startTime / 60).toByte()
         values[index++] = (cyclicConfig.startTime % 60).toByte()
         values[index++] = (cyclicConfig.endTime / 60).toByte()
@@ -1637,7 +1667,7 @@ internal object CommandUtil_V3 {
         aesKeyArray: ByteArray?
     ) {
         command.setCommand(Command.Companion.COMM_CYCLIC_CMD)
-        val userLen: Byte = 6 //指纹目前固定6个字节
+        val userLen: Byte = 6 // 指纹目前固定6个字节
         LogUtil.d("user:$user")
         LogUtil.d("userLen:$userLen")
         val userBytes: ByteArray = DigitUtil.longToByteArrayWithLen(user, userLen.toInt())
@@ -1650,7 +1680,7 @@ internal object CommandUtil_V3 {
         index += userLen.toInt()
         values[index++] = loopType
         values[index++] = cyclicConfig.weekDay.toByte()
-        values[index++] = 0 //月日的时候用
+        values[index++] = 0 // 月日的时候用
         values[index++] = (cyclicConfig.startTime / 60).toByte()
         values[index++] = (cyclicConfig.startTime % 60).toByte()
         values[index++] = (cyclicConfig.endTime / 60).toByte()
@@ -1661,14 +1691,14 @@ internal object CommandUtil_V3 {
 
     fun addKeyFobCyclicDate(
         command: Command,
-        keyFobMac: String?,
+        keyFobMac: String,
         loopType: Byte,
         cyclicConfig: CyclicConfig,
         aesKeyArray: ByteArray?
     ) {
         command.setCommand(Command.Companion.COMM_CYCLIC_CMD)
-        val userLen: Byte = 6 //mac地址目前固定6个字节
-        val userBytes: ByteArray = DigitUtil.getReverseMacArray(keyFobMac) //低在前高在后的顺序
+        val userLen: Byte = 6 // mac地址目前固定6个字节
+        val userBytes: ByteArray = DigitUtil.getReverseMacArray(keyFobMac)!! // 低在前高在后的顺序
         val values = ByteArray(1 + 1 + 1 + userLen + 1 + 1 + 1 + 8)
         var index = 0
         values[index++] = CyclicOpType.ADD
@@ -1678,7 +1708,7 @@ internal object CommandUtil_V3 {
         index += userLen.toInt()
         values[index++] = loopType
         values[index++] = cyclicConfig.weekDay.toByte()
-        values[index++] = 0 //月日的时候用
+        values[index++] = 0 // 月日的时候用
         values[index++] = (cyclicConfig.startTime / 60).toByte()
         values[index++] = (cyclicConfig.startTime % 60).toByte()
         values[index++] = (cyclicConfig.endTime / 60).toByte()
@@ -1723,9 +1753,9 @@ internal object CommandUtil_V3 {
         BluetoothImpl.Companion.getInstance().sendCommand(command.buildCommand())
     }
 
-    fun clearKeyfobCyclicPeriod(command: Command, keyfobMac: String?, aesKeyArray: ByteArray?) {
+    fun clearKeyfobCyclicPeriod(command: Command, keyfobMac: String, aesKeyArray: ByteArray?) {
         command.setCommand(Command.Companion.COMM_CYCLIC_CMD)
-        val keyFobBytes: ByteArray = DigitUtil.getReverseMacArray(keyfobMac)
+        val keyFobBytes: ByteArray = DigitUtil.getReverseMacArray(keyfobMac)!!
         val userLen = keyFobBytes.size.toByte()
         val values = ByteArray(1 + 1 + 1 + userLen)
         var index = 0
@@ -1766,21 +1796,21 @@ internal object CommandUtil_V3 {
                 values[1] = opType
                 var activateMode: Byte = 0
                 if (nbAwakeConfig.getNbAwakeModeList() != null) {
-                    for (nbAwakeMode in nbAwakeConfig.getNbAwakeModeList()) {
+                    for (nbAwakeMode in nbAwakeConfig.getNbAwakeModeList()!!) {
                         activateMode = activateMode or nbAwakeMode.getValue()
                     }
                 }
                 values[2] = activateMode
             }
             NBAwakeConfig.Companion.ACTION_AWAKE_TIME -> {
-                val configLen: Int = nbAwakeConfig.getNbAwakeTimeList().size
+                val configLen: Int = nbAwakeConfig.getNbAwakeTimeList()!!.size
                 values = ByteArray(1 + 1 + 1 + 3 * configLen)
                 values[0] = ActionType.SET
                 values[1] = opType
                 values[2] = configLen.toByte()
                 var index = 3
-                for (nbAwakeTime in nbAwakeConfig.getNbAwakeTimeList()) {
-                    values[index++] = nbAwakeTime.getNbAwakeTimeType().getValue()
+                for (nbAwakeTime in nbAwakeConfig.getNbAwakeTimeList()!!) {
+                    values[index++] = nbAwakeTime.getNbAwakeTimeType()!!.getValue()
                     values[index++] = (nbAwakeTime.getMinutes() / 60).toByte()
                     values[index++] = (nbAwakeTime.getMinutes() % 60).toByte()
                 }
@@ -1817,7 +1847,7 @@ internal object CommandUtil_V3 {
     fun keyFobManage(
         command: Command,
         opType: Byte,
-        transferData: TransferData,
+        transferData: TransferData?,
         aeskey: ByteArray?
     ) {
         var values: ByteArray? = null
@@ -1827,12 +1857,12 @@ internal object CommandUtil_V3 {
                 values = ByteArray(1 + 6 + 5 + 5)
                 values[0] = opType // 操作类型（1 byte）
                 val keyFobBytes: ByteArray =
-                    DigitUtil.getReverseMacArray(transferData.getKeyFobMac()) // 无线钥匙MAC（6 bytes）低在前，高在后
+                    DigitUtil.getReverseMacArray(transferData!!.getKeyFobMac()!!)!! // 无线钥匙MAC（6 bytes）低在前，高在后
                 System.arraycopy(keyFobBytes, 0, values, 1, 6)
-                val validityInfo: ValidityInfo = transferData.getValidityInfo()
+                val validityInfo: ValidityInfo = transferData.getValidityInfo()!!
                 var startDate: Long = validityInfo.getStartDate()
                 var endDate: Long = validityInfo.getEndDate()
-                if (startDate == 0L || endDate == 0L) { //永久时间
+                if (startDate == 0L || endDate == 0L) { // 永久时间
                     startDate = CommandUtil.permanentStartDate
                     endDate = CommandUtil.permanentEndDate
                 }
@@ -1850,8 +1880,8 @@ internal object CommandUtil_V3 {
             KeyFobOperationType.DELETE -> {
                 values = ByteArray(1 + 6)
                 values[0] = opType // 操作类型（1 byte）
-                keyFobBytes =
-                    DigitUtil.getReverseMacArray(transferData.getKeyFobMac()) // 无线钥匙MAC（6 bytes）低在前，高在后
+                val keyFobBytes =
+                    DigitUtil.getReverseMacArray(transferData!!.getKeyFobMac()!!)!! // 无线钥匙MAC（6 bytes）低在前，高在后
                 System.arraycopy(keyFobBytes, 0, values, 1, 6)
             }
             KeyFobOperationType.CLEAR -> {
@@ -1873,7 +1903,7 @@ internal object CommandUtil_V3 {
     fun getSensitivity(
         command: Command,
         aesKey: ByteArray?
-    ) { //初始化过程中使用TransferData.getAesKeyArray() 拿到的是默认的不是初始化设置的key
+    ) { // 初始化过程中使用TransferData.getAesKeyArray() 拿到的是默认的不是初始化设置的key
         command.setCommand(Command.Companion.COMM_SENSITIVITY_MANAGE)
         val values = byteArrayOf(SensitivityOperationType.QUERY)
         command.setData(values, aesKey)
@@ -1884,7 +1914,7 @@ internal object CommandUtil_V3 {
     fun addDoorSensor(command: Command, transferData: TransferData) {
         command.setCommand(Command.Companion.COMM_DOOR_SENSOR_MANAGE)
         val values: ByteArray =
-            DigitUtil.getReverseMacArray(transferData.getDoorSensorMac()) // 无线门磁MAC（6 bytes）低在前，高在后
+            DigitUtil.getReverseMacArray(transferData.getDoorSensorMac()!!)!! // 无线门磁MAC（6 bytes）低在前，高在后
         command.setData(values, transferData.getAesKeyArray())
         BluetoothImpl.Companion.getInstance().sendCommand(command.buildCommand())
     }

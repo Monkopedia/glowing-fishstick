@@ -1,10 +1,10 @@
 package com.ttlock.bl.sdk.base
 
-import android.Manifest
 import com.ttlock.bl.sdk.wirelessdoorsensor.GattCallbackHelper
 
+import android.util.Context
 open class BaseSDKApi {
-    @RequiresPermission(Manifest.permission.BLUETOOTH)
+
     fun isBLEEnabled(context: Context): Boolean {
         val manager: BluetoothManager =
             context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
@@ -12,7 +12,6 @@ open class BaseSDKApi {
         return adapter != null && adapter.isEnabled()
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH)
     fun requestBleEnable(activity: Activity) {
         val mBluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         if (mBluetoothAdapter != null && !mBluetoothAdapter.isEnabled()) {
@@ -21,7 +20,7 @@ open class BaseSDKApi {
         }
     }
 
-    open fun prepareBTService(context: Context?) { //todo:
+    open fun prepareBTService(context: Context?) { // todo:
         GattCallbackHelper.Companion.getInstance().prepare(context)
     }
 }

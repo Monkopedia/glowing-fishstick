@@ -1,6 +1,6 @@
 package com.ttlock.bl.sdk.device
 
-import android.Manifest
+import android.bluetooth.ScanResult
 
 /**
  * Created by TTLock on 2019/5/16.
@@ -25,23 +25,22 @@ class WirelessKeypad : TTDevice {
      */
     private var date = System.currentTimeMillis()
 
-    @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH])
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     constructor(scanResult: ScanResult) {
         device = scanResult.getDevice()
         scanRecord = scanResult.getScanRecord().getBytes()
         rssi = scanResult.getRssi()
-        name = device.getName()
+        name = device!!.getName()
         number = name
-        mAddress = device.getAddress()
+        mAddress = device!!.getAddress()
         this.date = System.currentTimeMillis()
         initial()
     }
 
     override fun initial() {
+        val scanRecord = scanRecord!!
         val scanRecordLength = scanRecord.size
         var index = 0
-        //TODO:越界
+        // TODO:越界
         while (index < scanRecordLength) {
             val len = scanRecord[index].toInt()
             if (len == 0) break
@@ -58,20 +57,20 @@ class WirelessKeypad : TTDevice {
                     var offset = 2
                     var protocolType = scanRecord[index + offset++]
                     var protocolVersion = scanRecord[index + offset++]
-                    if (protocolType.toInt() == 0x05 && protocolVersion.toInt() == 0x03) { //三代锁
+                    if (protocolType.toInt() == 0x05 && protocolVersion.toInt() == 0x03) { // 三代锁
                         scene = scanRecord[index + offset++]
-                    } else { //其它锁
-                        offset = 6 //其它协议是从第6位开始
+                    } else { // 其它锁
+                        offset = 6 // 其它协议是从第6位开始
                         protocolType = scanRecord[index + offset++]
                         protocolVersion = scanRecord[index + offset]
-                        offset = 9 //scene偏移量
+                        offset = 9 // scene偏移量
                         scene = scanRecord[index + offset++]
                     }
 
-                    //TODO:老款锁
-                    isSettingMode = if (scanRecord[index + offset] and 0x04 == 0) false else true
+                    // TODO:老款锁
+                    isSettingMode = if (scanRecord[index + offset].toInt() and 0x04 == 0) false else true
 
-                    //电量偏移量
+                    // 电量偏移量
                     offset++
                     batteryCapacity = scanRecord[index + offset].toInt()
                 }
@@ -148,43 +147,10 @@ class WirelessKeypad : TTDevice {
         return 0
     }
 
-    fun writeToParcel(dest: Parcel, flags: Int) {
-        dest.writeByte(scene)
-        dest.writeLong(this.date)
-        dest.writeParcelable(device, flags)
-        dest.writeByteArray(scanRecord)
-        dest.writeString(name)
-        dest.writeString(mAddress)
-        dest.writeInt(rssi)
-        dest.writeInt(batteryCapacity)
-        dest.writeByte(if (isSettingMode) 1.toByte() else 0.toByte())
-    }
-
-    constructor(`in`: Parcel) {
-        scene = `in`.readByte()
-        this.date = `in`.readLong()
-        device = `in`.readParcelable(BluetoothDevice::class.java.getClassLoader())
-        scanRecord = `in`.createByteArray()
-        name = `in`.readString()
-        mAddress = `in`.readString()
-        rssi = `in`.readInt()
-        batteryCapacity = `in`.readInt()
-        isSettingMode = `in`.readByte() !== 0
-    }
-
     companion object {
-        const val GAP_ADTYPE_LOCAL_NAME_COMPLETE: Byte = 0X09 //!< Complete local name
-        const val GAP_ADTYPE_POWER_LEVEL: Byte = 0X0A //!< TX Power Level: 0xXX: -127 to +127 dBm
+        const val GAP_ADTYPE_LOCAL_NAME_COMPLETE: Byte = 0X09 // !< Complete local name
+        const val GAP_ADTYPE_POWER_LEVEL: Byte = 0X0A // !< TX Power Level: 0xXX: -127 to +127 dBm
         const val GAP_ADTYPE_MANUFACTURER_SPECIFIC =
-            0XFF.toByte() //!< Manufacturer Specific Data: first 2 octets contain the Company Inentifier Code followed by the additional manufacturer specific data
-        val CREATOR: Creator<WirelessKeypad> = object : Creator<WirelessKeypad?>() {
-            fun createFromParcel(source: Parcel?): WirelessKeypad {
-                return WirelessKeypad(source)
-            }
-
-            fun newArray(size: Int): Array<WirelessKeypad> {
-                return arrayOfNulls(size)
-            }
-        }
+            0XFF.toByte() // !< Manufacturer Specific Data: first 2 octets contain the Company Inentifier Code followed by the additional manufacturer specific data
     }
 }

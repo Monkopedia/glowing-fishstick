@@ -93,10 +93,10 @@ class IpSetting {
             if (!checkIpFormat(router)) {
                 return false
             }
-            if (!TextUtils.isEmpty(preferredDns) && !checkIpFormat(preferredDns)) { //dns可以为空 不设置
+            if (!TextUtils.isEmpty(preferredDns) && !checkIpFormat(preferredDns)) { // dns可以为空 不设置
                 return false
             }
-            if (!TextUtils.isEmpty(alternateDns) && !checkIpFormat(alternateDns)) { //dns可以为空 不设置
+            if (!TextUtils.isEmpty(alternateDns) && !checkIpFormat(alternateDns)) { // dns可以为空 不设置
                 return false
             }
         }

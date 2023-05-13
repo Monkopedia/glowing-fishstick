@@ -1,6 +1,7 @@
 package com.ttlock.bl.sdk.util
 
 import android.text.TextUtils
+import android.util.TextUtils
 import com.ttlock.bl.sdk.constant.Feature
 import java.lang.Exception
 import java.util.*
@@ -45,7 +46,7 @@ object DigitUtil {
      */
     fun getMacString(macBytes: ByteArray): String {
         var value = ""
-        for (i in macBytes.indices.reversed()) {    //小端在前
+        for (i in macBytes.indices.reversed()) { // 小端在前
             var sTemp = Integer.toHexString(
                 0xFF and macBytes[i]
                     .toInt()
@@ -163,7 +164,7 @@ object DigitUtil {
         return res
     }
 
-    //TODO:
+    // TODO:
     fun sixBytesToLong(data: ByteArray): Long {
         var res = 0L
         res = res or (data[0].toLong() shl 40L and 0xFF0000000000L)
@@ -301,7 +302,7 @@ object DigitUtil {
      * @return
      */
     fun formateDateFromLong(time: Long, formate: String?): String {
-        //yyyy-MM-dd HH:mm:ss
+        // yyyy-MM-dd HH:mm:ss
         val date = Date(time)
         val formatter = SimpleDateFormat(formate)
         return formatter.format(date)
@@ -419,7 +420,7 @@ object DigitUtil {
         for (i in sectors.indices) {
             sectorValue = sectorValue or (1.toShort() shl 15 - sectors[i]).toShort()
         }
-        return if (sectorValue.toInt() == -1) { //全部设置
+        return if (sectorValue.toInt() == -1) { // 全部设置
             0
         } else sectorValue
     }
@@ -440,8 +441,8 @@ object DigitUtil {
                 sectorValue =
                     sectorValue or (1.toShort() shl 16 - Integer.valueOf(sectors[i])).toShort()
             }
-            //todo:
-            if (sectorValue.toInt() == -1) { //全部设置
+            // todo:
+            if (sectorValue.toInt() == -1) { // 全部设置
                 return 0
             }
         } catch (e: Exception) {
@@ -464,7 +465,7 @@ object DigitUtil {
         res[1] = (code shl 4).toByte()
         val secretKeyLong = java.lang.Long.valueOf(secretKey)
         var offset = 32
-        res[1] = (res[1] or (secretKeyLong shr offset)).toByte() //增加增加映射数的半个字节
+        res[1] = (res[1] or (secretKeyLong shr offset)).toByte() // 增加增加映射数的半个字节
         for (i in 2..5) {
             offset -= 8
             res[i] = (secretKeyLong shr offset).toByte()
@@ -634,7 +635,7 @@ object DigitUtil {
     fun convertToFeatureValue(array: ByteArray?): String? {
         if (array == null) return null
         val stringBuilder = StringBuilder()
-        val groupBuilder = StringBuilder() //4个字节一组
+        val groupBuilder = StringBuilder() // 4个字节一组
         for (i in array.indices) {
             groupBuilder.append(byteToHex(array[i]))
             if (i % 4 == 3) {
@@ -671,7 +672,7 @@ object DigitUtil {
     }
 
     @Throws(JSONException::class)
-    fun generateKeyboardPwd_Json(pwdList: Queue<String?>): String {
+    fun generateKeyboardPwd_Json(pwdList: Queue<String>): String {
         val jsonObject = JSONObject()
         val one_day_pwd = StringBuilder(pwdList.poll())
         for (i in 1..299) {
@@ -959,7 +960,7 @@ object DigitUtil {
             timeBytes[4].toInt(),
             timeBytes[5].toInt()
         )
-        //根据时间偏移量计算时间
+        // 根据时间偏移量计算时间
         val timeZone: TimeZone = TimeZone.getDefault()
         LogUtil.d("timezoneOffSet:$timezoneOffSet", DBG)
         if (timeZone.inDaylightTime(Date(System.currentTimeMillis()))) timezoneOffSet -= timeZone.getDSTSavings()

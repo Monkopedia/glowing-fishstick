@@ -10,6 +10,7 @@ import com.ttlock.bl.sdk.gateway.model.DeviceInfo
 import java.lang.Exception
 import java.util.*
 
+import android.util.Context
 /**
  * Created by TTLock on 2019/3/11.
  */
@@ -119,11 +120,11 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         }
         if (mWriteCharacteristic != null && mBluetoothGatt != null) {
             try {
-                hasRecDataLen = 0 //发送前恢复接收数据的起始位置
+                hasRecDataLen = 0 // 发送前恢复接收数据的起始位置
                 mWriteCharacteristic.setValue(dataQueue.poll())
                 mBluetoothGatt.writeCharacteristic(mWriteCharacteristic)
             } catch (e: Exception) {
-                //TODO:
+                // TODO:
             }
         } else {
             ConnectManager.Companion.getInstance().setDisconnected()
@@ -145,23 +146,25 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
             e.printStackTrace()
         }
         if (newState == BluetoothProfile.STATE_CONNECTED) {
-            //并不是所有设备都有这个wifi mac
+            // 并不是所有设备都有这个wifi mac
             wifiMacCharacteristic = null
             LogUtil.d("STATE_CONNECTED")
             LogUtil.d("Attempting to start service discovery:" + gatt.discoverServices())
         } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
             LogUtil.d("STATE_DISCONNECTED")
             removeConnectTimeout()
-            mAppExecutor.mainThread().execute(Runnable {
-                doWithDisconnect()
-                curCommand = 0
-            })
+            mAppExecutor.mainThread().execute(
+                Runnable {
+                    doWithDisconnect()
+                    curCommand = 0
+                }
+            )
             close()
         }
     }
 
     private fun doWithDisconnect() {
-        //设置断开状态
+        // 设置断开状态
         ConnectManager.Companion.getInstance().setDisconnected()
         callback = GatewayCallbackManager.Companion.getInstance().getCallback()
         LogUtil.d("callback:$callback")
@@ -211,12 +214,12 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
                         LogUtil.d(gattCharacteristic.getUuid().toString(), DBG)
                         LogUtil.d("read characteristic:" + Thread.currentThread(), DBG)
                         if (gattCharacteristic.getUuid().toString()
-                                .equals(READ_MODEL_NUMBER_UUID)
+                            .equals(READ_MODEL_NUMBER_UUID)
                         ) {
                             modelNumberCharacteristic = gattCharacteristic
                             gatt.readCharacteristic(gattCharacteristic)
                         } else if (gattCharacteristic.getUuid().toString()
-                                .equals(READ_WIFI_MAC_UUID)
+                            .equals(READ_WIFI_MAC_UUID)
                         ) {
                             wifiMacCharacteristic = gattCharacteristic
                         } else if (gattCharacteristic.getUuid().toString().equals(
@@ -233,7 +236,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
                     }
                 }
             } else {
-                //测试出现的情况 是否再次发现一次
+                // 测试出现的情况 是否再次发现一次
                 LogUtil.w("service is null", true)
             }
         } else {
@@ -272,7 +275,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
                             if (gattCharacteristic.getUuid().toString().equals(UUID_WRITE)) {
                                 mWriteCharacteristic = gattCharacteristic
                             } else if (gattCharacteristic.getUuid().toString()
-                                    .equals(UUID_NODIFY)
+                                .equals(UUID_NODIFY)
                             ) {
                                 gatt.setCharacteristicNotification(gattCharacteristic, true)
                                 val descriptor: BluetoothGattDescriptor =
@@ -283,14 +286,14 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
                                 if (gatt.writeDescriptor(descriptor)) {
                                     LogUtil.d("writeDescriptor successed", DBG)
                                 } else {
-                                    //TODO:
+                                    // TODO:
                                     LogUtil.d("writeDescriptor failed", DBG)
                                 }
                             }
                         }
                     }
                 } else {
-                    //测试出现的情况 是否再次发现一次
+                    // 测试出现的情况 是否再次发现一次
                     LogUtil.w("service is null", true)
                 }
             }
@@ -310,7 +313,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         if (status == BluetoothGatt.GATT_SUCCESS) {
             if (dataQueue.size > 0) {
                 characteristic.setValue(dataQueue.poll())
-                //TODO:写成功再写下一个
+                // TODO:写成功再写下一个
                 gatt.writeCharacteristic(characteristic)
             } else {
             }
@@ -331,10 +334,10 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
             LogUtil.d("data:" + DigitUtil.byteArrayToHexString(data))
             val dataLen = data.size
             System.arraycopy(data, 0, recDataBuf, hasRecDataLen, dataLen)
-            if (data.size >= 2 && data[0].toInt() == 0x72 && data[1].toInt() == 0x5b) { //数据开始
+            if (data.size >= 2 && data[0].toInt() == 0x72 && data[1].toInt() == 0x5b) { // 数据开始
                 recDataTotalLen = data[3] + 2 + 1 + 1 + 1
                 LogUtil.d("recDataTotalLen:$recDataTotalLen")
-            } else if (hasRecDataLen < 4) { //TODO:上一次的数据
+            } else if (hasRecDataLen < 4) { // TODO:上一次的数据
                 recDataTotalLen = data[3 - hasRecDataLen] + 2 + 1 + 1 + 1
                 LogUtil.d("recDataTotalLen:$recDataTotalLen")
             }
@@ -343,7 +346,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
             if (hasRecDataLen >= recDataTotalLen) {
                 LogUtil.d("recDataTotalLen:$recDataTotalLen")
                 doWithData(Arrays.copyOf(recDataBuf, recDataTotalLen))
-                //TODO:会有缓存的数据一起发送下来
+                // TODO:会有缓存的数据一起发送下来
                 if (recDataTotalLen != hasRecDataLen && hasRecDataLen > 0) {
                     hasRecDataLen = hasRecDataLen - recDataTotalLen
                     System.arraycopy(data, 20 - hasRecDataLen, recDataBuf, 0, hasRecDataLen)
@@ -356,7 +359,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            //清零
+            // 清零
             hasRecDataLen = 0
         }
     }
@@ -368,7 +371,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         if (status == BluetoothGatt.GATT_SUCCESS) {
             if (device != null) CommandUtil.gatewayEcho(device.getAddress())
         } else {
-            //TODO:
+            // TODO:
         }
     }
 
@@ -377,100 +380,104 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
     }
 
     fun connectCallback() {
-        mAppExecutor.mainThread().execute(Runnable {
-            removeConnectTimeout()
-            ConnectManager.Companion.getInstance().onConnectSuccess(device)
-        })
+        mAppExecutor.mainThread().execute(
+            Runnable {
+                removeConnectTimeout()
+                ConnectManager.Companion.getInstance().onConnectSuccess(device)
+            }
+        )
     }
 
     private fun doWithData(values: ByteArray) {
-        mAppExecutor.mainThread().execute(Runnable {
-            LogUtil.d("values:" + DigitUtil.byteArrayToHexString(values))
-            val command = Command(values)
-            command.mac = device.getAddress()
-            val data = command.getData()
-            LogUtil.d("command:" + DigitUtil.byteToHex(command.getCommand()))
-            LogUtil.d("data:" + DigitUtil.byteArrayToHexString(data))
-            callback = GatewayCallbackManager.Companion.getInstance().getCallback()
-            if (callback == null && command.getCommand() != Command.Companion.COMM_ECHO) { //保持连接是默认做的 没有回调
-                LogUtil.d("callback is null")
-                return@Runnable
-            }
-            if (data == null) {
-                LogUtil.d("data is null")
-                return@Runnable
-            }
-            when (command.getCommand()) {
-                Command.Companion.COMM_ECHO -> connectCallback()
-                Command.Companion.COMM_GET_NEARBY_SSID -> when (data[0]) {
-                    0 -> {
-                        val len = data[1].toInt()
-                        val wiFi = WiFi()
-                        wiFi.ssid = String(Arrays.copyOfRange(data, 2, 2 + len))
-                        wiFi.rssi = data[len + 2].toInt()
-                        LogUtil.d("wifi:$wiFi")
-                        if (!TextUtils.isEmpty(wiFi.ssid)) {
-                            insertWifi(wiFi)
-                            (callback as ScanWiFiByGatewayCallback).onScanWiFiByGateway(wiFis)
+        mAppExecutor.mainThread().execute(
+            Runnable {
+                LogUtil.d("values:" + DigitUtil.byteArrayToHexString(values))
+                val command = Command(values)
+                command.mac = device.getAddress()
+                val data = command.getData()
+                LogUtil.d("command:" + DigitUtil.byteToHex(command.getCommand()))
+                LogUtil.d("data:" + DigitUtil.byteArrayToHexString(data))
+                callback = GatewayCallbackManager.Companion.getInstance().getCallback()
+                if (callback == null && command.getCommand() != Command.Companion.COMM_ECHO) { // 保持连接是默认做的 没有回调
+                    LogUtil.d("callback is null")
+                    return@Runnable
+                }
+                if (data == null) {
+                    LogUtil.d("data is null")
+                    return@Runnable
+                }
+                when (command.getCommand()) {
+                    Command.Companion.COMM_ECHO -> connectCallback()
+                    Command.Companion.COMM_GET_NEARBY_SSID -> when (data[0]) {
+                        0 -> {
+                            val len = data[1].toInt()
+                            val wiFi = WiFi()
+                            wiFi.ssid = String(Arrays.copyOfRange(data, 2, 2 + len))
+                            wiFi.rssi = data[len + 2].toInt()
+                            LogUtil.d("wifi:$wiFi")
+                            if (!TextUtils.isEmpty(wiFi.ssid)) {
+                                insertWifi(wiFi)
+                                (callback as ScanWiFiByGatewayCallback).onScanWiFiByGateway(wiFis)
+                            }
+                        }
+                        5 -> {
+                            // TODO:数据一样 是不是要返回
+                            (callback as ScanWiFiByGatewayCallback).onScanWiFiByGatewaySuccess()
+                            wiFis.clear()
+                        }
+                        else -> callback.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
+                    }
+                    Command.Companion.COMM_CONFIGURE_WIFI -> {
+                        curCommand = 0
+                        if (data[0].toInt() == 0) {
+                            CommandUtil.configureServer(configureInfo)
+                        } else {
+                            if (data[0].toInt() != 2) {
+                                if (callback != null) {
+                                    callback.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
+                                }
+                            } else { // 命令接收成功，正在处理
+                                curCommand = Command.Companion.COMM_CONFIGURE_WIFI
+                            }
                         }
                     }
-                    5 -> {
-                        //TODO:数据一样 是不是要返回
-                        (callback as ScanWiFiByGatewayCallback).onScanWiFiByGatewaySuccess()
-                        wiFis.clear()
-                    }
-                    else -> callback.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
-                }
-                Command.Companion.COMM_CONFIGURE_WIFI -> {
-                    curCommand = 0
-                    if (data[0].toInt() == 0) {
-                        CommandUtil.configureServer(configureInfo)
-                    } else {
-                        if (data[0].toInt() != 2) {
+                    Command.Companion.COMM_CONFIGURE_SERVER -> {
+                        curCommand = 0
+                        if (data[0].toInt() == 0) CommandUtil.configureAccount(configureInfo) else {
                             if (callback != null) {
                                 callback.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
                             }
-                        } else { //命令接收成功，正在处理
-                            curCommand = Command.Companion.COMM_CONFIGURE_WIFI
                         }
                     }
-                }
-                Command.Companion.COMM_CONFIGURE_SERVER -> {
-                    curCommand = 0
-                    if (data[0].toInt() == 0) CommandUtil.configureAccount(configureInfo) else {
-                        if (callback != null) {
+                    Command.Companion.COMM_CONFIGURE_ACCOUNT -> {
+                        curCommand = 0
+                        if (data[0].toInt() == 0) {
+                            GatewayCallbackManager.Companion.getInstance().clearAllCallback()
+                            (callback as InitGatewayCallback).onInitGatewaySuccess(deviceInfo)
+                            LogUtil.d("success")
+                        } else {
+                            if (callback != null) {
+                                callback.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
+                            }
+                        }
+                    }
+                    Command.Companion.COMM_ENTER_DFU -> {
+                        if (data[0].toInt() == 0) {
+                            (callback as EnterDfuCallback).onEnterDfuSuccess()
+                        } else {
                             callback.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
                         }
-                    }
-                }
-                Command.Companion.COMM_CONFIGURE_ACCOUNT -> {
-                    curCommand = 0
-                    if (data[0].toInt() == 0) {
+                        // 清理缓存的回调类型
                         GatewayCallbackManager.Companion.getInstance().clearAllCallback()
-                        (callback as InitGatewayCallback).onInitGatewaySuccess(deviceInfo)
-                        LogUtil.d("success")
-                    } else {
-                        if (callback != null) {
-                            callback.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
-                        }
                     }
-                }
-                Command.Companion.COMM_ENTER_DFU -> {
-                    if (data[0].toInt() == 0) {
-                        (callback as EnterDfuCallback).onEnterDfuSuccess()
+                    Command.Companion.COMM_CONFIG_IP -> if (data[0].toInt() == 0) {
+                        (callback as ConfigIpCallback).onConfigIpSuccess()
                     } else {
                         callback.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
                     }
-                    //清理缓存的回调类型
-                    GatewayCallbackManager.Companion.getInstance().clearAllCallback()
-                }
-                Command.Companion.COMM_CONFIG_IP -> if (data[0].toInt() == 0) {
-                    (callback as ConfigIpCallback).onConfigIpSuccess()
-                } else {
-                    callback.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
                 }
             }
-        })
+        )
     }
 
     @Synchronized
@@ -479,9 +486,9 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         var i = 0
         while (i < wiFis.size) {
             val wiFi: WiFi = wiFis[i]
-            if (newWifi.ssid == wiFi.ssid) { //信号值排序要改
+            if (newWifi.ssid == wiFi.ssid) { // 信号值排序要改
                 if (hasInsert) wiFis.removeAt(i) else {
-                    //TODO:
+                    // TODO:
                     hasInsert = true
                 }
                 break
@@ -489,7 +496,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
                 if (!hasInsert) {
                     wiFis.add(i, newWifi)
                     hasInsert = true
-                    //TODO:
+                    // TODO:
                     i++
                 }
             }

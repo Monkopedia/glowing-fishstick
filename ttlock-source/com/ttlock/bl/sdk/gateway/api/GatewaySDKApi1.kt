@@ -1,7 +1,7 @@
 package com.ttlock.bl.sdk.gateway.api
 
-import android.Manifest
 import com.ttlock.bl.sdk.gateway.callback.ConfigIpCallback
+import android.util.Context
 import com.ttlock.bl.sdk.gateway.command.Command
 import com.ttlock.bl.sdk.gateway.command.CommandUtil
 
@@ -9,7 +9,7 @@ import com.ttlock.bl.sdk.gateway.command.CommandUtil
  * Created by TTLock on 2019/4/24.
  */
 internal class GatewaySDKApi {
-    @RequiresPermission(Manifest.permission.BLUETOOTH)
+
     fun isBLEEnabled(context: Context): Boolean {
         val manager: BluetoothManager =
             context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
@@ -17,7 +17,6 @@ internal class GatewaySDKApi {
         return adapter != null && adapter.isEnabled()
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH)
     fun requestBleEnable(activity: Activity) {
         val mBluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         if (mBluetoothAdapter != null && !mBluetoothAdapter.isEnabled()) {
@@ -30,12 +29,10 @@ internal class GatewaySDKApi {
         GattCallbackHelper.Companion.getInstance().prepare(context)
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH_ADMIN)
     fun startScanGateway(callback: ScanGatewayCallback?) {
         ScanManager.Companion.getInstance().startScan(callback)
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH_ADMIN)
     fun stopScanGateway() {
         ScanManager.Companion.getInstance().stopScan()
     }
@@ -55,7 +52,7 @@ internal class GatewaySDKApi {
             try {
                 if (configureInfo.plugVersion == GatewayType.G2) {
                     CommandUtil.configureWifi(configureInfo)
-                } else { //G3 G4网关不需要走配置WIFI
+                } else { // G3 G4网关不需要走配置WIFI
                     CommandUtil.configureServer(configureInfo)
                 }
             } catch (e: UnsupportedEncodingException) {
@@ -94,7 +91,7 @@ internal class GatewaySDKApi {
         } else {
             val command: Command = Command(Command.Companion.COMM_CONFIG_IP)
             command.mac = mac
-            val data = ByteArray(1 + 4 + 4 + 4 + 4 + 4) //类型、ip、子网掩码、默认网关、首选dns服务器、备选dns服务器
+            val data = ByteArray(1 + 4 + 4 + 4 + 4 + 4) // 类型、ip、子网掩码、默认网关、首选dns服务器、备选dns服务器
             data[0] = ipSetting.getType().toByte()
             var bytes: ByteArray = GatewayUtil.convertIp2Bytes(ipSetting.getIpAddress())
             if (bytes == null) {

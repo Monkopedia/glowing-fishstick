@@ -39,7 +39,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
     private val handler: android.os.Handler
     private var deviceInfo: SystemInfo? = null
 
-    //TODO:
+    // TODO:
     private var isInitSuccess = false
     private var mAddress: String? = null
     private val noResponseRunable = Runnable {
@@ -105,16 +105,16 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         if (mWriteCharacteristic != null && mBluetoothGatt != null) {
             try {
                 startResponseTimer()
-                hasRecDataLen = 0 //发送前恢复接收数据的起始位置
+                hasRecDataLen = 0 // 发送前恢复接收数据的起始位置
                 mWriteCharacteristic.setValue(dataQueue.poll())
                 mBluetoothGatt.writeCharacteristic(mWriteCharacteristic)
             } catch (e: Exception) {
-                //TODO:
+                // TODO:
             }
         } else {
             LogUtil.d("mBluetoothGatt:$mBluetoothGatt", DBG)
             LogUtil.d("mNotifyCharacteristic or mBluetoothGatt is null", DBG)
-            //TODO:
+            // TODO:
         }
     }
 
@@ -132,15 +132,17 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
             LogUtil.d("STATE_DISCONNECTED")
             mConnectionState = STATE_DISCONNECTED
-            mAppExecutor.mainThread().execute(Runnable {
-                val mConnectCallback: ConnectCallback =
-                    RemoteCallbackManager.Companion.getInstance().getConnectCallback()
-                if (mConnectCallback != null) {
-                    Log.d("OMG", "====disconnect==1==$isInitSuccess")
-                    mConnectCallback.onFail(RemoteError.CONNECT_FAIL)
+            mAppExecutor.mainThread().execute(
+                Runnable {
+                    val mConnectCallback: ConnectCallback =
+                        RemoteCallbackManager.Companion.getInstance().getConnectCallback()
+                    if (mConnectCallback != null) {
+                        Log.d("OMG", "====disconnect==1==$isInitSuccess")
+                        mConnectCallback.onFail(RemoteError.CONNECT_FAIL)
+                    }
+                    isInitSuccess = false
                 }
-                isInitSuccess = false
-            })
+            )
             clear()
         }
     }
@@ -162,7 +164,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
                         LogUtil.d(gattCharacteristic.getUuid().toString(), DBG)
                         LogUtil.d("read characteristic:" + Thread.currentThread(), DBG)
                         if (gattCharacteristic.getUuid().toString()
-                                .equals(READ_MODEL_NUMBER_UUID)
+                            .equals(READ_MODEL_NUMBER_UUID)
                         ) {
                             modelNumberCharacteristic = gattCharacteristic
                             //                                gatt.readCharacteristic(gattCharacteristic);
@@ -237,7 +239,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
                 LogUtil.d("deviceInfo:$deviceInfo")
                 val callbackType: Int =
                     RemoteCallbackManager.Companion.getInstance().getOperationType()
-                if (callbackType == OperationType.GET_DEVICE_INFO) { //获取设备信息成功后 断开蓝牙
+                if (callbackType == OperationType.GET_DEVICE_INFO) { // 获取设备信息成功后 断开蓝牙
                     val callback: RemoteCallback =
                         RemoteCallbackManager.Companion.getInstance().getCallback()
                     if (callback != null) {
@@ -258,7 +260,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
                             if (gattCharacteristic.getUuid().toString().equals(UUID_WRITE)) {
                                 mWriteCharacteristic = gattCharacteristic
                             } else if (gattCharacteristic.getUuid().toString()
-                                    .equals(UUID_NODIFY)
+                                .equals(UUID_NODIFY)
                             ) {
                                 gatt.setCharacteristicNotification(gattCharacteristic, true)
                                 val descriptor: BluetoothGattDescriptor =
@@ -269,14 +271,14 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
                                 if (gatt.writeDescriptor(descriptor)) {
                                     LogUtil.d("writeDescriptor successed", DBG)
                                 } else {
-                                    //TODO:
+                                    // TODO:
                                     LogUtil.d("writeDescriptor failed", DBG)
                                 }
                             }
                         }
                     }
                 } else {
-                    //测试出现的情况 是否再次发现一次
+                    // 测试出现的情况 是否再次发现一次
                     LogUtil.w("service is null", true)
                 }
             }
@@ -296,7 +298,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         if (status == BluetoothGatt.GATT_SUCCESS) {
             if (dataQueue.size > 0) {
                 characteristic.setValue(dataQueue.poll())
-                //TODO:写成功再写下一个
+                // TODO:写成功再写下一个
                 gatt.writeCharacteristic(characteristic)
             } else {
             }
@@ -318,7 +320,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
             LogUtil.d("data:" + DigitUtil.byteArrayToHexString(data))
             val dataLen = data.size
             System.arraycopy(data, 0, recDataBuf, hasRecDataLen, dataLen)
-            if (data[0].toInt() == 0x72 && data[1].toInt() == 0x5b) { //数据开始
+            if (data[0].toInt() == 0x72 && data[1].toInt() == 0x5b) { // 数据开始
                 recDataTotalLen = data[3] + 2 + 1 + 1 + 1
                 LogUtil.d("recDataTotalLen:$recDataTotalLen")
             }
@@ -330,7 +332,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            //清零
+            // 清零
             hasRecDataLen = 0
         }
     }
@@ -341,52 +343,56 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         LogUtil.d("")
         if (status == BluetoothGatt.GATT_SUCCESS) {
             mConnectionState = STATE_CONNECTED
-            mAppExecutor.mainThread().execute(Runnable {
-                val mConnectCallback: ConnectCallback =
-                    RemoteCallbackManager.Companion.getInstance().getConnectCallback()
-                if (mConnectCallback != null) {
-                    Log.d("OMG", "====connect success==1==")
-                    mConnectCallback.onConnectSuccess(device)
+            mAppExecutor.mainThread().execute(
+                Runnable {
+                    val mConnectCallback: ConnectCallback =
+                        RemoteCallbackManager.Companion.getInstance().getConnectCallback()
+                    if (mConnectCallback != null) {
+                        Log.d("OMG", "====connect success==1==")
+                        mConnectCallback.onConnectSuccess(device)
+                    }
                 }
-            })
+            )
         } else {
-            //TODO:
+            // TODO:
         }
     }
 
     private fun doWithData(values: ByteArray) {
-        mAppExecutor.mainThread().execute(Runnable {
-            LogUtil.d("values:" + DigitUtil.byteArrayToHexString(values))
-            val command = Command(values)
-            command.mac = device!!.address
-            val data = command.getData()
-            LogUtil.d("command:" + DigitUtil.byteToHex(command.getCommand()))
-            LogUtil.d("data:" + DigitUtil.byteArrayToHexString(data))
-            if (data == null) {
-                LogUtil.d("data is null")
-                return@Runnable
-            }
-            if (data[1].toInt() == 1) { //成功
-                when (data[0]) {
-                    Command.Companion.COMM_SET_LOCK -> {
-                        val initKeyFobResult = InitRemoteResult()
-                        initKeyFobResult.setBatteryLevel(data[2].toInt())
-                        initKeyFobResult.setSystemInfo(deviceInfo)
-                        val callback: RemoteCallback =
-                            RemoteCallbackManager.Companion.getInstance().getCallback()
-                        if (callback != null) {
-                            (callback as InitRemoteCallback).onInitSuccess(initKeyFobResult)
+        mAppExecutor.mainThread().execute(
+            Runnable {
+                LogUtil.d("values:" + DigitUtil.byteArrayToHexString(values))
+                val command = Command(values)
+                command.mac = device!!.address
+                val data = command.getData()
+                LogUtil.d("command:" + DigitUtil.byteToHex(command.getCommand()))
+                LogUtil.d("data:" + DigitUtil.byteArrayToHexString(data))
+                if (data == null) {
+                    LogUtil.d("data is null")
+                    return@Runnable
+                }
+                if (data[1].toInt() == 1) { // 成功
+                    when (data[0]) {
+                        Command.Companion.COMM_SET_LOCK -> {
+                            val initKeyFobResult = InitRemoteResult()
+                            initKeyFobResult.setBatteryLevel(data[2].toInt())
+                            initKeyFobResult.setSystemInfo(deviceInfo)
+                            val callback: RemoteCallback =
+                                RemoteCallbackManager.Companion.getInstance().getCallback()
+                            if (callback != null) {
+                                (callback as InitRemoteCallback).onInitSuccess(initKeyFobResult)
+                            }
                         }
                     }
-                }
-            } else {
-                val callback: RemoteCallback =
-                    RemoteCallbackManager.Companion.getInstance().getCallback()
-                if (callback != null) {
-                    callback.onFail(RemoteError.FAILED)
+                } else {
+                    val callback: RemoteCallback =
+                        RemoteCallbackManager.Companion.getInstance().getCallback()
+                    if (callback != null) {
+                        callback.onFail(RemoteError.FAILED)
+                    }
                 }
             }
-        })
+        )
     }
 
     fun isConnected(address: String): Boolean {

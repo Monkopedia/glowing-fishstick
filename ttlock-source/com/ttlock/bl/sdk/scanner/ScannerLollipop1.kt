@@ -1,6 +1,5 @@
 package com.ttlock.bl.sdk.scanner
 
-import android.Manifest
 import com.ttlock.bl.sdk.service.ThreadPool
 import java.lang.Exception
 import java.util.ArrayList
@@ -8,7 +7,7 @@ import java.util.ArrayList
 /**
  * Created by Sciener on 2016/5/9.
  */
-@TargetApi(Build.VERSION_CODES.LOLLIPOP)
+
 class ScannerLollipop : ScannerCompat() {
     private val mBluetoothAdapter: BluetoothAdapter?
     private val scanCallback: ScanCallbackImpl? = ScanCallbackImpl()
@@ -18,7 +17,6 @@ class ScannerLollipop : ScannerCompat() {
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
     }
 
-    @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.BLUETOOTH])
     override fun startScanInternal(serviceUuids: Array<UUID?>?) {
         scanner = mBluetoothAdapter.getBluetoothLeScanner()
         if (scanner == null) {
@@ -59,7 +57,6 @@ class ScannerLollipop : ScannerCompat() {
         }
     }
 
-    @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.BLUETOOTH])
     override fun stopScan() {
         if (scanner != null && scanCallback != null && mBluetoothAdapter.isEnabled()) {
             scanner.stopScan(scanCallback)
@@ -68,7 +65,7 @@ class ScannerLollipop : ScannerCompat() {
     }
 
     private inner class ScanCallbackImpl : ScanCallback() {
-        @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH])
+
         fun onScanResult(callbackType: Int, result: ScanResult?) {
             super.onScanResult(callbackType, result)
             //            LogUtil.d("callbackType=" + callbackType + " scanResult=" + result, DBG);
@@ -84,7 +81,6 @@ class ScannerLollipop : ScannerCompat() {
             super.onBatchScanResults(results)
         }
 
-        @RequiresPermission(Manifest.permission.BLUETOOTH_ADMIN)
         fun onScanFailed(errorCode: Int) {
             super.onScanFailed(errorCode)
             if (onScanFailedListener != null) {
@@ -95,7 +91,6 @@ class ScannerLollipop : ScannerCompat() {
         }
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH_ADMIN)
     private fun restartBle() {
         if (mBluetoothAdapter != null) {
             // 一旦发生错误，除了重启蓝牙再没有其它解决办法
@@ -109,7 +104,7 @@ class ScannerLollipop : ScannerCompat() {
                     } catch (e: InterruptedException) {
                         e.printStackTrace()
                     }
-                    //要等待蓝牙彻底关闭，然后再打开，才能实现重启效果
+                    // 要等待蓝牙彻底关闭，然后再打开，才能实现重启效果
                     if (mBluetoothAdapter.getState() === BluetoothAdapter.STATE_OFF) {
                         mBluetoothAdapter.enable()
                         break

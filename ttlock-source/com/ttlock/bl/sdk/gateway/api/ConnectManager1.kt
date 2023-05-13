@@ -97,7 +97,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
                 mConnectParam!!.mac
             )
             else -> {
-                //对外 单独提供的  连接回调
+                // 对外 单独提供的  连接回调
                 val mConnectCallback: ConnectCallback =
                     GatewayCallbackManager.Companion.getInstance().getConnectCallback()
                 if (mConnectCallback != null) {
@@ -128,7 +128,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
         setDisconnected()
         val mCallback: ConnectCallback =
             GatewayCallbackManager.Companion.getInstance().getConnectCallback()
-        if (mCallback != null && mCallback !is ConnectManager) { //如果是外部 单独的连接回调 才进行断开回调(自己回调自己 死循环)
+        if (mCallback != null && mCallback !is ConnectManager) { // 如果是外部 单独的连接回调 才进行断开回调(自己回调自己 死循环)
             mCallback.onDisconnected()
         }
     }

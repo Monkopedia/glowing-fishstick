@@ -1,6 +1,5 @@
 package com.ttlock.bl.sdk.wirelessdoorsensor
 
-import android.Manifest
 import com.ttlock.bl.sdk.wirelessdoorsensor.callback.EnterDfuCallback
 import com.ttlock.bl.sdk.wirelessdoorsensor.model.ConnectParam
 import com.ttlock.bl.sdk.wirelessdoorsensor.model.OperationType
@@ -18,19 +17,17 @@ class WirelessDoorSensorClient private constructor() : BaseClient<WirelessDoorSe
         private val mInstance = WirelessDoorSensorClient()
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH_ADMIN)
     fun startScan(callback: ScanWirelessDoorSensorCallback?) {
 //        Wirelessdoor.getInstance().setScanCallback(callback);
         mApi.startScan(callback)
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH_ADMIN)
     fun stopScan() {
         mApi.stopScan()
         //        KeyFobCallbackManager.getInstance().clearScanCallback();
     }
 
-    //todo:临时测试用
+    // todo:临时测试用
     override fun prepareBTService(context: Context?) {
         LogUtil.d("prepare service")
         //        mApi.prepareBTService(context);
@@ -58,7 +55,7 @@ class WirelessDoorSensorClient private constructor() : BaseClient<WirelessDoorSe
             return
         }
         if (!DoorSensorCallbackManager.Companion.getInstance()
-                .isBusy(OperationType.INIT, callback)
+            .isBusy(OperationType.INIT, callback)
         ) {
             val connectParam = ConnectParam()
             connectParam.lockmac = lockParam.lockMac
@@ -96,7 +93,7 @@ class WirelessDoorSensorClient private constructor() : BaseClient<WirelessDoorSe
             return
         }
         if (!DoorSensorCallbackManager.Companion.getInstance()
-                .isBusy(OperationType.ENTER_DFU, callback)
+            .isBusy(OperationType.ENTER_DFU, callback)
         ) {
             LogUtil.d("进行连接")
             val connectParam = ConnectParam()

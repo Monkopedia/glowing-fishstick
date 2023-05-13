@@ -1,6 +1,5 @@
 package com.ttlock.bl.sdk.gateway.api
 
-import android.Manifest
 import com.ttlock.bl.sdk.gateway.callback.DfuCallback
 import com.ttlock.bl.sdk.gateway.callback.EnterDfuCallback
 import com.ttlock.bl.sdk.service.ThreadPool
@@ -10,6 +9,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.lang.Exception
 import java.net.URL
+import android.util.Context
 
 /**
  * Created by TTLock on 2017/8/16.
@@ -43,7 +43,7 @@ internal class DfuSDKApi {
         errorCallback()
     }
 
-    //todo:可以增加一个超时
+    // todo:可以增加一个超时
     private val scanCallback: ScanGatewayCallback = object : ScanGatewayCallback {
         override fun onScanGatewaySuccess(device: ExtendedBluetoothDevice) {
             if (device.getAddress() == gatewayMac) {
@@ -60,7 +60,7 @@ internal class DfuSDKApi {
                         LogUtil.d("start dfu")
                         startDfu()
                     }
-                } else { //泰凌微网关一定要走蓝牙的进入升级模式
+                } else { // 泰凌微网关一定要走蓝牙的进入升级模式
                     isDFUMode = false
                     isTelinkDFUMode = false
                     enterDfuByBle()
@@ -159,7 +159,6 @@ internal class DfuSDKApi {
         isTelinkDFUMode = false
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH_ADMIN)
     private fun startScan() {
         try {
             handler.postDelayed(scanTimeOutRunable, scanTimeOut)
@@ -218,7 +217,7 @@ internal class DfuSDKApi {
             for (service in services) {
                 for (characteristic in service.getCharacteristics()) {
                     if (characteristic.getUuid()
-                            .equals(Device.Companion.CHARACTERISTIC_UUID_WRITE)
+                        .equals(Device.Companion.CHARACTERISTIC_UUID_WRITE)
                     ) {
                         serviceUUID = service.getUuid()
                         break
@@ -242,7 +241,7 @@ internal class DfuSDKApi {
             when (state) {
                 Device.Companion.STATE_PROGRESS -> {
                     TelinkLog.d("ota progress : " + device.getOtaProgress())
-                    //todo:数据处理
+                    // todo:数据处理
                     dfuProgressChangeCallback(
                         device.getMacAddress(),
                         device.getOtaProgress(),
@@ -274,54 +273,62 @@ internal class DfuSDKApi {
         currentPart: Int,
         partsTotal: Int
     ) {
-        handler.post(Runnable {
-            dfuCallback!!.onProgressChanged(
-                deviceAddress,
-                percent,
-                speed,
-                avgSpeed,
-                currentPart,
-                partsTotal
-            )
-        })
+        handler.post(
+            Runnable {
+                dfuCallback!!.onProgressChanged(
+                    deviceAddress,
+                    percent,
+                    speed,
+                    avgSpeed,
+                    currentPart,
+                    partsTotal
+                )
+            }
+        )
     }
 
     private fun telinkDfu() {
         LogUtil.d("telink dfu")
-        handler.postDelayed(Runnable {
-            if (telinkDevice != null) {
-                telinkDfuDisconnectFailureCallback = true
-                telinkDevice.setDeviceStateCallback(deviceCallback)
-                telinkDevice.connect(mContext)
-            } else {
-                LogUtil.d("telinkDevice is null")
-            }
-        }, 1500)
+        handler.postDelayed(
+            Runnable {
+                if (telinkDevice != null) {
+                    telinkDfuDisconnectFailureCallback = true
+                    telinkDevice.setDeviceStateCallback(deviceCallback)
+                    telinkDevice.connect(mContext)
+                } else {
+                    LogUtil.d("telinkDevice is null")
+                }
+            },
+            1500
+        )
     }
 
     private fun nordicDfu() {
         LogUtil.d("nordic dfu")
-        handler.postDelayed(Runnable {
-            val starter: DfuServiceInitiator = DfuServiceInitiator(gatewayMac)
-                .setForeground(false)
-                .setDisableNotification(true)
-                .setUnsafeExperimentalButtonlessServiceInSecureDfuEnabled(true) //                        .setDeviceName(mDoorkey.getLockName())
-                .setForceDfu(true)
-                .setPacketsReceiptNotificationsEnabled(true)
-                .setPrepareDataObjectDelay(400)
-            starter.setZip(
-                FileProviderPath.getUriForFile(mContext, File(mUpdateFilePath)),
-                mUpdateFilePath
-            )
-            starter.start(mContext, DfuService::class.java)
-        }, 2000)
+        handler.postDelayed(
+            Runnable {
+                val starter: DfuServiceInitiator = DfuServiceInitiator(gatewayMac)
+                    .setForeground(false)
+                    .setDisableNotification(true)
+                    .setUnsafeExperimentalButtonlessServiceInSecureDfuEnabled(true) //                        .setDeviceName(mDoorkey.getLockName())
+                    .setForceDfu(true)
+                    .setPacketsReceiptNotificationsEnabled(true)
+                    .setPrepareDataObjectDelay(400)
+                starter.setZip(
+                    FileProviderPath.getUriForFile(mContext, File(mUpdateFilePath)),
+                    mUpdateFilePath
+                )
+                starter.start(mContext, DfuService::class.java)
+            },
+            2000
+        )
     }
 
     private fun enterDfuByServer() {
-        //泰凌微网关
-        //服务端发命令，会让网关重启
-        //重置之后，蓝牙去连接，然后发那条升级命令
-        //这样之后才可以升级
+        // 泰凌微网关
+        // 服务端发命令，会让网关重启
+        // 重置之后，蓝牙去连接，然后发那条升级命令
+        // 这样之后才可以升级
         ThreadPool.getThreadPool().execute {
             val json: String = ResponseService.enterDfuMode(clientId, accessToken, gatewayId)
             try {
@@ -329,10 +336,10 @@ internal class DfuSDKApi {
                 LogUtil.d("isDFUMode:$isDFUMode")
                 val jsonObject = JSONObject(json)
                 val errcode: Int = jsonObject.getInt("errcode")
-                startScan() //进入升级模式后 继续扫描根据广播判断是那种芯片的升级
+                startScan() // 进入升级模式后 继续扫描根据广播判断是那种芯片的升级
                 //                    if(errcode == 0) {
 //                        startScan();//进入升级模式后 继续扫描根据广播判断是那种芯片的升级
-////                        startDfu();
+// //                        startDfu();
 //                    } else {
 //                        if (!isDFUMode || !isTelinkDFUMode) {
 //                            enterDfuByBle();
@@ -340,8 +347,8 @@ internal class DfuSDKApi {
 //                    }
             } catch (e: JSONException) {
                 e.printStackTrace()
-                startScan() //进入升级模式后 继续扫描根据广播判断是那种芯片的升级
-                //TODO:已经在升级模式
+                startScan() // 进入升级模式后 继续扫描根据广播判断是那种芯片的升级
+                // TODO:已经在升级模式
 //                    if (!isDFUMode || !isTelinkDFUMode) {
 //                        enterDfuByBle();
 //                    }
@@ -350,21 +357,24 @@ internal class DfuSDKApi {
     }
 
     private fun doEnterDfuByBle() {
-        GatewayClient.Companion.getDefault().enterDfu(gatewayMac, object : EnterDfuCallback {
-            override fun onEnterDfuSuccess() {
-                startScan()
-            }
-
-            override fun onFail(error: GatewayError) {
-                LogUtil.d(error.getDescription())
-                if (!isDFUMode && !isTelinkDFUMode) {
-                    errorCallback()
+        GatewayClient.Companion.getDefault().enterDfu(
+            gatewayMac,
+            object : EnterDfuCallback {
+                override fun onEnterDfuSuccess() {
+                    startScan()
                 }
-                //                else {
+
+                override fun onFail(error: GatewayError) {
+                    LogUtil.d(error.getDescription())
+                    if (!isDFUMode && !isTelinkDFUMode) {
+                        errorCallback()
+                    }
+                    //                else {
 //                    startDfu();
 //                }
+                }
             }
-        })
+        )
     }
 
     private fun enterDfuByBle() {
@@ -395,7 +405,6 @@ internal class DfuSDKApi {
         downloadSuccess = false
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH_ADMIN)
     fun startDfu(
         context: Context?,
         clientId: String?,
@@ -407,7 +416,7 @@ internal class DfuSDKApi {
         if (handler == null) {
             handler = Handler(Looper.getMainLooper())
         }
-        //TODO:赋值
+        // TODO:赋值
         this.clientId = clientId
         this.accessToken = accessToken
         this.gatewayId = gatewayId
@@ -417,7 +426,7 @@ internal class DfuSDKApi {
         DfuServiceListenerHelper.registerProgressListener(context, mDfuProgressListener)
         GatewayClient.Companion.getDefault().prepareBTService(context)
         initData()
-        if (NetworkUtil.isNetConnected(context)) { //TODO:退出unregister
+        if (NetworkUtil.isNetConnected(context)) { // TODO:退出unregister
             getDownloadUrl()
         } else {
             LogUtil.d("bad network")
@@ -454,12 +463,12 @@ internal class DfuSDKApi {
                 `is` = conn.getInputStream()
                 val fileLen = conn.contentLength
 
-                //TODO:一次性读完
+                // TODO:一次性读完
                 os = ByteArrayOutputStream(fileLen)
-                //创建字节流
+                // 创建字节流
                 val bs = ByteArray(1024)
                 var len: Int
-                //写数据
+                // 写数据
                 while (`is`.read(bs).also { len = it } != -1) {
                     os!!.write(bs, 0, len)
                 }
@@ -473,7 +482,7 @@ internal class DfuSDKApi {
                 //                    LogUtil.d("mUpdateFilePath:" + mUpdateFilePath, DBG);
                 os = FileOutputStream(mUpdateFilePath)
                 if (decryptedBytes != null) os!!.write(decryptedBytes)
-                //完成后关闭流
+                // 完成后关闭流
                 os!!.close()
                 `is`.close()
                 downloadSuccess = true

@@ -1,8 +1,16 @@
 package com.ttlock.bl.sdk.api
 
-import android.Manifest
 import com.ttlock.bl.sdk.constant.Constant
+import com.ttlock.bl.sdk.device.TTDevice
+import com.ttlock.bl.sdk.entity.HotelData
 import java.util.*
+import android.util.*
+import android.bluetooth.*
+import com.ttlock.bl.sdk.constant.LockType
+import com.ttlock.bl.sdk.entity.LockVersion
+import com.ttlock.bl.sdk.entity.Scene
+import com.ttlock.bl.sdk.gateway.model.GatewayType
+import com.ttlock.bl.sdk.util.DigitUtil
 
 /**
  * Created by Sciener on 2016/5/13.
@@ -27,7 +35,9 @@ class ExtendedBluetoothDevice : TTDevice {
     var orgId: Byte = 0
 
     /** 锁类型  */
-    private var lockType = 0
+    private var lockTypeImpl = 0
+    val lockType: Int
+        get() = getLockType()
 
     /** 判断是否触摸过门锁 三代锁使用  */
     private var isTouch = true
@@ -126,7 +136,8 @@ class ExtendedBluetoothDevice : TTDevice {
     private var remoteUnlockSwitch = 0
     private var manufacturerId: String? = null
     var disconnectStatus = 0
-    private var hotelData: HotelData? = null
+    var hotelData: HotelData? = null
+    private set
 
     /**
      * 网关类型
@@ -135,15 +146,13 @@ class ExtendedBluetoothDevice : TTDevice {
 
     constructor() {}
 
-    @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH])
     constructor(device: BluetoothDevice) : this(device, 0, null) {
     }
 
-    @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH])
-    constructor(device: BluetoothDevice, rssi: Int, scanRecord: ByteArray) {
-        device = device
-        scanRecord = scanRecord
-        rssi = rssi
+    constructor(device: BluetoothDevice, rssi: Int, scanRecord: ByteArray?) {
+        this.device = device
+        this.scanRecord = scanRecord
+        this.rssi = rssi
         this.name = device.getName()
         this.mAddress = device.getAddress()
         if (scanRecord != null) {
@@ -151,41 +160,39 @@ class ExtendedBluetoothDevice : TTDevice {
         }
     }
 
-    @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH])
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     constructor(scanResult: ScanResult) {
         this.device = scanResult.getDevice()
         this.scanRecord = scanResult.getScanRecord().getBytes()
         this.rssi = scanResult.getRssi()
-        this.name = device.getName()
-        this.mAddress = device.getAddress()
+        this.name = device?.getName()
+        this.mAddress = device?.getAddress()
         date = System.currentTimeMillis()
         initial()
     }
 
     protected override fun initial() {
-        val scanRecordLength: Int = scanRecord.size
+        val scanRecordLength: Int = scanRecord!!.size
         var index = 0
         var nameIsScienerDfu = false
         var isHasMAC = false
-        //TODO:越界
+        // TODO:越界
         while (index < scanRecordLength) {
-            val len: Int = scanRecord.get(index).toInt()
+            val len: Int = scanRecord!!.get(index).toInt()
             if (len == 0) {
                 break
             }
-            val adtype: Byte = scanRecord.get(index + 1)
+            val adtype: Byte = scanRecord!!.get(index + 1)
             when (adtype) {
                 GAP_ADTYPE_LOCAL_NAME_COMPLETE -> {
                     val nameBytes = ByteArray(len - 1)
                     System.arraycopy(scanRecord, index + 2, nameBytes, 0, len - 1)
-                    if (name == null || name.length == 0) {
+                    if (name == null || name!!.length == 0) {
                         setName(String(nameBytes))
                     }
                     if (String(nameBytes) == "ScienerDfu") {
                         nameIsScienerDfu = true
                     }
-                    if (name.uppercase(Locale.getDefault()).startsWith("LOCK_")) {
+                    if (name!!.uppercase(Locale.getDefault()).startsWith("LOCK_")) {
                         isRoomLock = true
                     }
                 }
@@ -199,14 +206,14 @@ class ExtendedBluetoothDevice : TTDevice {
                     )
                     isHasMAC = true
                     var offset = 2
-                    protocolType = scanRecord.get(index + offset++)
-                    protocolVersion = scanRecord.get(index + offset++)
-                    if (protocolType.toInt() == 0x12 && protocolVersion.toInt() == 0x19) { //插座DUF模式
+                    protocolType = scanRecord!!.get(index + offset++)
+                    protocolVersion = scanRecord!!.get(index + offset++)
+                    if (protocolType.toInt() == 0x12 && protocolVersion.toInt() == 0x19) { // 插座DUF模式
 //                        LogUtil.d("plug is in dfu mode");
                         isDfuMode = true
                         return
                     }
-                    if (protocolType.toInt() == 0x13 && protocolVersion.toInt() == 0x19) { //网关DFU模式(泰凌微芯片)
+                    if (protocolType.toInt() == 0x13 && protocolVersion.toInt() == 0x19) { // 网关DFU模式(泰凌微芯片)
                         isTelinkGatewayDfuMode = true
                         return
                     }
@@ -218,19 +225,19 @@ class ExtendedBluetoothDevice : TTDevice {
                     if (protocolType.toInt() == 0x34 && protocolVersion.toInt() == 0x12) {
                         isWristband = true
                     }
-                    if (BluetoothImpl.Companion.scanBongOnly) { //手环
+                    if (BluetoothImpl.Companion.scanBongOnly) { // 手环
                         return
                     }
-                    if (protocolType.toInt() == 0x05 && protocolVersion.toInt() == 0x03) { //三代锁
-                        scene = scanRecord.get(index + offset++)
-                    } else { //其它锁
-                        offset = 6 //其它协议是从第6位开始
-                        protocolType = scanRecord.get(index + offset++)
-                        protocolVersion = scanRecord.get(index + offset)
-                        offset = 9 //scene偏移量
-                        scene = scanRecord.get(index + offset++)
+                    if (protocolType.toInt() == 0x05 && protocolVersion.toInt() == 0x03) { // 三代锁
+                        scene = scanRecord!!.get(index + offset++)
+                    } else { // 其它锁
+                        offset = 6 // 其它协议是从第6位开始
+                        protocolType = scanRecord!!.get(index + offset++)
+                        protocolVersion = scanRecord!!.get(index + offset)
+                        offset = 9 // scene偏移量
+                        scene = scanRecord!!.get(index + offset++)
                     }
-                    if (protocolType < 0x05 || getLockType() == LockType.LOCK_TYPE_V2S) { //老款锁没广播
+                    if (protocolType < 0x05 || getLockType() == LockType.LOCK_TYPE_V2S) { // 老款锁没广播
                         isRoomLock = true
                         return
                     }
@@ -244,7 +251,7 @@ class ExtendedBluetoothDevice : TTDevice {
                             Scene.PARKING_LOCK -> isLockcar = true
                             Scene.PAD_LOCK -> isPadLock = true
                             Scene.CYLINDER -> isCyLinder = true
-                            Scene.REMOTE_CONTROL_DEVICE -> if (protocolType.toInt() == 0x05 && protocolVersion.toInt() == 0x03) {   //二代车位锁场景也是10 增加一个三代锁的判断
+                            Scene.REMOTE_CONTROL_DEVICE -> if (protocolType.toInt() == 0x05 && protocolVersion.toInt() == 0x03) { // 二代车位锁场景也是10 增加一个三代锁的判断
                                 isRemoteControlDevice = true
                             }
                             Scene.LIFT -> isLift = true
@@ -252,36 +259,36 @@ class ExtendedBluetoothDevice : TTDevice {
                             else -> {}
                         }
                     }
-                    isUnlock = if (scanRecord.get(index + offset) and 0x01 == 1) true else false
-                    //TODO:老款锁
+                    isUnlock = if (scanRecord!!.get(index + offset).toInt() and 0x01 == 1) true else false
+                    // TODO:老款锁
                     isSettingMode =
-                        if (scanRecord.get(index + offset) and 0x04 == 0) false else true
+                        if (scanRecord!!.get(index + offset).toInt() and 0x04 == 0) false else true
                     if (getLockType() == LockType.LOCK_TYPE_V3 || getLockType() == LockType.LOCK_TYPE_V3_CAR) {
                         isTouch =
-                            if (scanRecord.get(index + offset) and 0x08 == 0) false else true //三代锁表示触摸标志位
-                    } else if (getLockType() == LockType.LOCK_TYPE_CAR) { //二代车位锁放到最后判断 遥控设备场景是10
-                        isTouch = false //车位锁默认设置成false
+                            if (scanRecord!!.get(index + offset).toInt() and 0x08 == 0) false else true // 三代锁表示触摸标志位
+                    } else if (getLockType() == LockType.LOCK_TYPE_CAR) { // 二代车位锁放到最后判断 遥控设备场景是10
+                        isTouch = false // 车位锁默认设置成false
                         isLockcar = true
                     }
-                    if (isLockcar) { //0位 4位组合状态
+                    if (isLockcar) { // 0位 4位组合状态
                         parkStatus = if (isUnlock) {
-                            if (scanRecord.get(index + offset) and 0x10 == 1) {
+                            if (scanRecord!!.get(index + offset).toInt() and 0x10 == 1) {
                                 STATUS_PARK_UNLOCK_HAS_CAR.toInt()
                             } else {
                                 STATUS_PARK_UNKNOWN.toInt()
                             }
                         } else {
-                            if (scanRecord.get(index + offset) and 0x10 == 1) {
+                            if (scanRecord!!.get(index + offset).toInt() and 0x10 == 1) {
                                 STATUS_PARK_UNLOCK_NO_CAR.toInt()
                             } else {
                                 STATUS_PARK_LOCK.toInt()
                             }
                         }
                     }
-                    //电量偏移量
+                    // 电量偏移量
                     offset++
-                    batteryCapacity = scanRecord.get(index + offset).toInt()
-                    //mac地址偏移量
+                    batteryCapacity = scanRecord!!.get(index + offset).toInt()
+                    // mac地址偏移量
                     offset += 3
                     if (TextUtils.isEmpty(mAddress)) {
                         setAddress(
@@ -295,7 +302,7 @@ class ExtendedBluetoothDevice : TTDevice {
                         )
                     }
                 }
-                GAP_ADTYPE_POWER_LEVEL -> txPowerLevel = scanRecord.get(index + 2)
+                GAP_ADTYPE_POWER_LEVEL -> txPowerLevel = scanRecord!!.get(index + 2)
                 else -> {}
             }
             index += len + 1
@@ -352,7 +359,7 @@ class ExtendedBluetoothDevice : TTDevice {
     //        return batteryCapacity;
     //    }
     fun setBatteryCapacity(batteryCapacity: Byte) {
-        batteryCapacity = batteryCapacity.toInt()
+        this.batteryCapacity = batteryCapacity.toInt()
     }
 
     fun isTouch(): Boolean {
@@ -501,13 +508,13 @@ class ExtendedBluetoothDevice : TTDevice {
     @Throws(ParamInvalidException::class)
     fun setHotelData(hotelData: HotelData) {
         if (hotelData.hotelInfo != null) {
-            val data: String = DigitUtil.decodeLockData(hotelData.getHotelInfo())
+            val data: String = DigitUtil.decodeLockData(hotelData.getHotelInfo()!!)
             if (!TextUtils.isEmpty(data)) {
                 val array: Array<String?> = data.split(",").toTypedArray()
                 hotelData.hotelNumber = Integer.valueOf(array[0])
                 if (array[1] != null && array[2] != null) {
-                    hotelData.icKey = DigitUtil.convertStringDividerByDot(array[1])
-                    hotelData.aesKey = DigitUtil.convertStringDividerByDot(array[2])
+                    hotelData.icKey = DigitUtil.convertStringDividerByDot(array[1]!!)
+                    hotelData.aesKey = DigitUtil.convertStringDividerByDot(array[2]!!)
                 } else {
                     throw ParamInvalidException()
                 }
@@ -526,7 +533,7 @@ class ExtendedBluetoothDevice : TTDevice {
 
     fun setManufacturerId(manufacturerId: String?) {
         this.manufacturerId = manufacturerId
-        Constant.VENDOR = manufacturerId
+        Constant.VENDOR = manufacturerId!!
     }
 
     fun setRemoteUnlockSwitch(remoteUnlockSwitch: Int) {
@@ -555,58 +562,58 @@ class ExtendedBluetoothDevice : TTDevice {
         this.parkStatus = parkStatus
     }
 
-    //TODO:二代
-    //直接根据mac地址连接的没有扫描信息 这里的数据不准
+    // TODO:二代
+    // 直接根据mac地址连接的没有扫描信息 这里的数据不准
     fun getLockType(): Int {
         if (protocolType.toInt() == 0x05 && protocolVersion.toInt() == 0x03 && scene.toInt() == 0x07) {
-            lockType = LockType.LOCK_TYPE_V3_CAR
+            lockTypeImpl = LockType.LOCK_TYPE_V3_CAR
         } else if (protocolType.toInt() == 0x0a && protocolVersion.toInt() == 0x01) {
-            lockType = LockType.LOCK_TYPE_CAR
+            lockTypeImpl = LockType.LOCK_TYPE_CAR
         } else if (protocolType.toInt() == 0x0b && protocolVersion.toInt() == 0x01) {
-            lockType = LockType.LOCK_TYPE_MOBI
+            lockTypeImpl = LockType.LOCK_TYPE_MOBI
         } else if (protocolType.toInt() == 0x05 && protocolVersion.toInt() == 0x04) {
-            lockType = LockType.LOCK_TYPE_V2S_PLUS
+            lockTypeImpl = LockType.LOCK_TYPE_V2S_PLUS
         } else if (protocolType.toInt() == 0x05 && protocolVersion.toInt() == 0x03) {
-            lockType = LockType.LOCK_TYPE_V3
-        } else if (protocolType.toInt() == 0x05 && protocolVersion.toInt() == 0x01 || name != null && name.uppercase(
+            lockTypeImpl = LockType.LOCK_TYPE_V3
+        } else if (protocolType.toInt() == 0x05 && protocolVersion.toInt() == 0x01 || name != null && name!!.uppercase(
                 Locale.getDefault()
             ).startsWith("LOCK_")
         ) {
-            lockType = LockType.LOCK_TYPE_V2S
+            lockTypeImpl = LockType.LOCK_TYPE_V2S
         }
-        return lockType
+        return lockTypeImpl
     }
 
-    //TODO:不一定准确
+    // TODO:不一定准确
     fun getLockVersionJson(): String {
-        if (name.uppercase(Locale.getDefault()).startsWith("LOCK_")) { //2S版本信息
+        if (name!!.uppercase(Locale.getDefault()).startsWith("LOCK_")) { // 2S版本信息
             protocolType = 0x05
             protocolVersion = 0x01
         }
-        return LockVersion(protocolType, protocolVersion, scene, groupId, orgId).toGson()
+        return LockVersion(protocolType, protocolVersion, scene, groupId.toShort(), orgId.toShort()).toGson()
     }
 
     override fun toString(): String {
         return "ExtendedBluetoothDevice{" +
-                "name='" + name + '\'' +
-                ", mAddress='" + mAddress + '\'' +
-                ", rssi=" + rssi +
-                ", protocolType=" + protocolType +
-                ", protocolVersion=" + protocolVersion +
-                ", scene=" + scene +
-                ", groupId=" + groupId +
-                ", orgId=" + orgId +
-                ", lockType=" + lockType +
-                ", isTouch=" + isTouch +
-                ", isSettingMode=" + isSettingMode +
-                ", isWristband=" + isWristband() +
-                ", isUnlock=" + isUnlock +
-                ", txPowerLevel=" + txPowerLevel +
-                ", batteryCapacity=" + batteryCapacity +
-                ", date=" + date +
-                ", device=" + device +
-                ", scanRecord=" + DigitUtil.byteArrayToHexString(scanRecord) +
-                '}'
+            "name='" + name + '\'' +
+            ", mAddress='" + mAddress + '\'' +
+            ", rssi=" + rssi +
+            ", protocolType=" + protocolType +
+            ", protocolVersion=" + protocolVersion +
+            ", scene=" + scene +
+            ", groupId=" + groupId +
+            ", orgId=" + orgId +
+            ", lockType=" + lockTypeImpl +
+            ", isTouch=" + isTouch +
+            ", isSettingMode=" + isSettingMode +
+            ", isWristband=" + isWristband() +
+            ", isUnlock=" + isUnlock +
+            ", txPowerLevel=" + txPowerLevel +
+            ", batteryCapacity=" + batteryCapacity +
+            ", date=" + date +
+            ", device=" + device +
+            ", scanRecord=" + DigitUtil.byteArrayToHexString(scanRecord) +
+            '}'
     }
 
     fun getGatewayType(): Int {
@@ -617,98 +624,11 @@ class ExtendedBluetoothDevice : TTDevice {
         this.gatewayType = gatewayType
     }
 
-    fun describeContents(): Int {
-        return 0
-    }
-
-    fun writeToParcel(dest: Parcel, flags: Int) {
-        dest.writeInt(parkStatus)
-        dest.writeByte(protocolType)
-        dest.writeByte(protocolVersion)
-        dest.writeByte(scene)
-        dest.writeByte(groupId)
-        dest.writeByte(orgId)
-        dest.writeInt(lockType)
-        dest.writeByte(if (isTouch) 1.toByte() else 0.toByte())
-        dest.writeByte(if (isUnlock) 1.toByte() else 0.toByte())
-        dest.writeByte(txPowerLevel)
-        dest.writeLong(date)
-        dest.writeByte(if (isWristband) 1.toByte() else 0.toByte())
-        dest.writeByte(if (isRoomLock) 1.toByte() else 0.toByte())
-        dest.writeByte(if (isSafeLock) 1.toByte() else 0.toByte())
-        dest.writeByte(if (isBicycleLock) 1.toByte() else 0.toByte())
-        dest.writeByte(if (isLockcar) 1.toByte() else 0.toByte())
-        dest.writeByte(if (isGlassLock) 1.toByte() else 0.toByte())
-        dest.writeByte(if (isPadLock) 1.toByte() else 0.toByte())
-        dest.writeByte(if (isCyLinder) 1.toByte() else 0.toByte())
-        dest.writeByte(if (isRemoteControlDevice) 1.toByte() else 0.toByte())
-        dest.writeByte(if (isLift) 1.toByte() else 0.toByte())
-        dest.writeByte(if (isPowerSaver) 1.toByte() else 0.toByte())
-        dest.writeByte(if (isDfuMode) 1.toByte() else 0.toByte())
-        dest.writeByte(if (isTelinkGatewayDfuMode) 1.toByte() else 0.toByte())
-        dest.writeByte(if (isNoLockService) 1.toByte() else 0.toByte())
-        dest.writeInt(remoteUnlockSwitch)
-        dest.writeString(manufacturerId)
-        dest.writeInt(disconnectStatus)
-        dest.writeParcelable(hotelData, flags)
-        dest.writeInt(gatewayType)
-        dest.writeParcelable(this.device, flags)
-        dest.writeByteArray(this.scanRecord)
-        dest.writeString(this.name)
-        dest.writeString(this.number)
-        dest.writeString(this.mAddress)
-        dest.writeInt(this.rssi)
-        dest.writeInt(this.batteryCapacity)
-        dest.writeByte(if (this.isSettingMode) 1.toByte() else 0.toByte())
-    }
-
-    constructor(`in`: Parcel) {
-        parkStatus = `in`.readInt()
-        protocolType = `in`.readByte()
-        protocolVersion = `in`.readByte()
-        scene = `in`.readByte()
-        groupId = `in`.readByte()
-        orgId = `in`.readByte()
-        lockType = `in`.readInt()
-        isTouch = `in`.readByte() !== 0
-        isUnlock = `in`.readByte() !== 0
-        txPowerLevel = `in`.readByte()
-        date = `in`.readLong()
-        isWristband = `in`.readByte() !== 0
-        isRoomLock = `in`.readByte() !== 0
-        isSafeLock = `in`.readByte() !== 0
-        isBicycleLock = `in`.readByte() !== 0
-        isLockcar = `in`.readByte() !== 0
-        isGlassLock = `in`.readByte() !== 0
-        isPadLock = `in`.readByte() !== 0
-        isCyLinder = `in`.readByte() !== 0
-        isRemoteControlDevice = `in`.readByte() !== 0
-        isLift = `in`.readByte() !== 0
-        isPowerSaver = `in`.readByte() !== 0
-        isDfuMode = `in`.readByte() !== 0
-        isTelinkGatewayDfuMode = `in`.readByte() !== 0
-        isNoLockService = `in`.readByte() !== 0
-        remoteUnlockSwitch = `in`.readInt()
-        manufacturerId = `in`.readString()
-        disconnectStatus = `in`.readInt()
-        hotelData = `in`.readParcelable(HotelData::class.java.getClassLoader())
-        gatewayType = `in`.readInt()
-        this.device = `in`.readParcelable(BluetoothDevice::class.java.getClassLoader())
-        this.scanRecord = `in`.createByteArray()
-        this.name = `in`.readString()
-        this.number = `in`.readString()
-        this.mAddress = `in`.readString()
-        this.rssi = `in`.readInt()
-        this.batteryCapacity = `in`.readInt()
-        this.isSettingMode = `in`.readByte() !== 0
-    }
-
     companion object {
-        private const val serialVersionUID = 1L
-        const val GAP_ADTYPE_LOCAL_NAME_COMPLETE: Byte = 0X09 //!< Complete local name
-        const val GAP_ADTYPE_POWER_LEVEL: Byte = 0X0A //!< TX Power Level: 0xXX: -127 to +127 dBm
+        const val GAP_ADTYPE_LOCAL_NAME_COMPLETE: Byte = 0X09 // !< Complete local name
+        const val GAP_ADTYPE_POWER_LEVEL: Byte = 0X0A // !< TX Power Level: 0xXX: -127 to +127 dBm
         const val GAP_ADTYPE_MANUFACTURER_SPECIFIC =
-            0XFF.toByte() //!< Manufacturer Specific Data: first 2 octets contain the Company Inentifier Code followed by the additional manufacturer specific data
+            0XFF.toByte() // !< Manufacturer Specific Data: first 2 octets contain the Company Inentifier Code followed by the additional manufacturer specific data
 
         /**
          * 闭锁
@@ -759,15 +679,6 @@ class ExtendedBluetoothDevice : TTDevice {
          * 无法连接
          */
         const val DEVICE_CANNOT_CONNECT = 5
-        val CREATOR: Creator<ExtendedBluetoothDevice> =
-            object : Creator<ExtendedBluetoothDevice?>() {
-                fun createFromParcel(source: Parcel?): ExtendedBluetoothDevice {
-                    return ExtendedBluetoothDevice(source)
-                }
 
-                fun newArray(size: Int): Array<ExtendedBluetoothDevice> {
-                    return arrayOfNulls(size)
-                }
-            }
     }
 }

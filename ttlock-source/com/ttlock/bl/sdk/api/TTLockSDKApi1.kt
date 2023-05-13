@@ -1,8 +1,32 @@
 package com.ttlock.bl.sdk.api
 
-import android.Manifest
 import com.ttlock.bl.sdk.constant.Constant
 import com.ttlock.bl.sdk.constant.OperationType
+
+import android.util.Context
+import android.util.TextUtils
+import com.ttlock.bl.sdk.callback.LockCallback
+import com.ttlock.bl.sdk.constant.APICommand
+import com.ttlock.bl.sdk.constant.ActionType
+import com.ttlock.bl.sdk.constant.ControlAction
+import com.ttlock.bl.sdk.constant.LockType
+import com.ttlock.bl.sdk.constant.LogType
+import com.ttlock.bl.sdk.entity.AccessoryInfo
+import com.ttlock.bl.sdk.entity.HotelData
+import com.ttlock.bl.sdk.entity.IpSetting
+import com.ttlock.bl.sdk.entity.LockData
+import com.ttlock.bl.sdk.entity.LockError
+import com.ttlock.bl.sdk.entity.LockVersion
+import com.ttlock.bl.sdk.entity.NBAwakeConfig
+import com.ttlock.bl.sdk.entity.PassageModeConfig
+import com.ttlock.bl.sdk.entity.PassageModeType
+import com.ttlock.bl.sdk.entity.SoundVolume
+import com.ttlock.bl.sdk.entity.TTLockConfigType
+import com.ttlock.bl.sdk.entity.TransferData
+import com.ttlock.bl.sdk.entity.UnlockDirection
+import com.ttlock.bl.sdk.entity.ValidityInfo
+import com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.GsonUtil
 
 /**
  * Created on  2019/4/11 0011 15:41
@@ -19,7 +43,6 @@ internal class TTLockSDKApi : TTLockSdkApiBase() {
         BluetoothImpl.Companion.getInstance().stopBTService()
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH)
     public override fun startScan() {
         BluetoothImpl.Companion.getInstance().startScan()
     }
@@ -30,11 +53,11 @@ internal class TTLockSDKApi : TTLockSdkApiBase() {
 
     fun initLock(device: ExtendedBluetoothDevice) {
         val lockType = device.lockType
-        //TODO:注释掉有些锁搜索广播慢
-        //TODO:E指令有時候彙報KEY_INVALID 查一下原因 是不是 沒有進入設置模式造成的
-        //TODO:车位锁添加的时候反馈有异常指令
+        // TODO:注释掉有些锁搜索广播慢
+        // TODO:E指令有時候彙報KEY_INVALID 查一下原因 是不是 沒有進入設置模式造成的
+        // TODO:车位锁添加的时候反馈有异常指令
         if (lockType > LockType.LOCK_TYPE_V2S && !device.isSettingMode) {
-            val mCallback: LockCallback = LockCallbackManager.Companion.getInstance().getCallback()
+            val mCallback: LockCallback? = LockCallbackManager.Companion.getInstance().getCallback()
             if (mCallback != null) {
                 mCallback.onFail(LockError.LOCK_IS_IN_NO_SETTING_MODE)
             }
@@ -48,8 +71,8 @@ internal class TTLockSDKApi : TTLockSdkApiBase() {
             }
             LockType.LOCK_TYPE_MOBI -> {}
             LockType.LOCK_TYPE_V2S -> {
-                adminPs = String(DigitUtil.generateDynamicPassword(10))
-                unlockKey = String(DigitUtil.generateDynamicPassword(10))
+                val adminPs = String(DigitUtil.generateDynamicPassword(10))
+                val unlockKey = String(DigitUtil.generateDynamicPassword(10))
                 CommandUtil.V_addAdmin(LockType.LOCK_TYPE_V2S, adminPs, unlockKey, null)
             }
             LockType.LOCK_TYPE_V2S_PLUS -> CommandUtil.getAESKey(
@@ -64,7 +87,7 @@ internal class TTLockSDKApi : TTLockSdkApiBase() {
                 CommandUtil.getAESKey(transferData)
                 Constant.VENDOR = Constant.SCIENER
             }
-            else ->                 //TODO:
+            else -> // TODO:
                 CommandUtil.E_getLockVersion(APICommand.OP_ADD_ADMIN)
         }
     }
@@ -80,15 +103,15 @@ internal class TTLockSDKApi : TTLockSdkApiBase() {
     }
 
     fun resetEkey(lockData: LockData) {
-        val aesKeyStr: String = lockData.getAesKeyStr()
+        val aesKeyStr: String? = lockData.getAesKeyStr()
         var aesKeyArray: ByteArray? = null
         if (!TextUtils.isEmpty(aesKeyStr)) {
-            aesKeyArray = DigitUtil.convertAesKeyStrToBytes(aesKeyStr)
+            aesKeyArray = DigitUtil.convertAesKeyStrToBytes(aesKeyStr!!)
         }
         CommandUtil.A_checkAdmin(
             lockData.getUid(),
-            GsonUtil.toJson<LockVersion>(lockData.getLockVersion()),
-            lockData.getAdminPwd(),
+            GsonUtil.toJson<LockVersion>(lockData.getLockVersion()!!),
+            lockData.getAdminPwd()!!,
             null,
             lockData.getLockFlagPos(),
             aesKeyArray,
@@ -99,11 +122,11 @@ internal class TTLockSDKApi : TTLockSdkApiBase() {
     }
 
     fun resetLock(lockData: LockData) {
-        val aesKeyArray: ByteArray = DigitUtil.convertAesKeyStrToBytes(lockData.getAesKeyStr())
+        val aesKeyArray: ByteArray = DigitUtil.convertAesKeyStrToBytes(lockData.getAesKeyStr()!!)!!
         CommandUtil.A_checkAdmin(
             lockData.getUid(),
-            GsonUtil.toJson<LockVersion>(lockData.getLockVersion()),
-            lockData.getAdminPwd(),
+            GsonUtil.toJson<LockVersion>(lockData.getLockVersion()!!),
+            lockData.getAdminPwd()!!,
             lockData.getLockKey(),
             lockData.getLockFlagPos(),
             aesKeyArray,
@@ -366,7 +389,7 @@ internal class TTLockSDKApi : TTLockSdkApiBase() {
         val transferData: TransferData = getPreparedData(lockData)
         transferData.setAPICommand(APICommand.OP_ADD_IC)
         transferData.setValidityInfo(validityInfo)
-        if (validityInfo != null && validityInfo.getStartDate() > 0 && validityInfo.getEndDate() > 0) { //兼容之前的使用方式
+        if (validityInfo != null && validityInfo.getStartDate() > 0 && validityInfo.getEndDate() > 0) { // 兼容之前的使用方式
             transferData.setStartDate(validityInfo.getStartDate())
             transferData.setEndDate(validityInfo.getEndDate())
         }
@@ -378,7 +401,7 @@ internal class TTLockSDKApi : TTLockSdkApiBase() {
         transferData.setAPICommand(APICommand.OP_MODIFY_IC_PERIOD)
         transferData.setValidityInfo(validityInfo)
         transferData.setNo(CardNum)
-        if (validityInfo != null && validityInfo.getStartDate() > 0 && validityInfo.getEndDate() > 0) { //兼容之前的使用方式
+        if (validityInfo != null && validityInfo.getStartDate() > 0 && validityInfo.getEndDate() > 0) { // 兼容之前的使用方式
             transferData.setStartDate(validityInfo.getStartDate())
             transferData.setEndDate(validityInfo.getEndDate())
         }
@@ -428,7 +451,7 @@ internal class TTLockSDKApi : TTLockSdkApiBase() {
         val transferData: TransferData = getPreparedData(lockData)
         transferData.setAPICommand(APICommand.OP_ADD_FR)
         transferData.setValidityInfo(validityInfo)
-        if (validityInfo != null && validityInfo.getStartDate() > 0 && validityInfo.getEndDate() > 0) { //兼容之前的使用方式
+        if (validityInfo != null && validityInfo.getStartDate() > 0 && validityInfo.getEndDate() > 0) { // 兼容之前的使用方式
             transferData.setStartDate(validityInfo.getStartDate())
             transferData.setEndDate(validityInfo.getEndDate())
         }
@@ -454,7 +477,7 @@ internal class TTLockSDKApi : TTLockSdkApiBase() {
         transferData.setAPICommand(APICommand.OP_MODIFY_FR_PERIOD)
         transferData.setValidityInfo(validityInfo)
         transferData.setNo(FingerprintNum)
-        if (validityInfo != null && validityInfo.getStartDate() > 0 && validityInfo.getEndDate() > 0) { //兼容之前的使用方式
+        if (validityInfo != null && validityInfo.getStartDate() > 0 && validityInfo.getEndDate() > 0) { // 兼容之前的使用方式
             transferData.setStartDate(validityInfo.getStartDate())
             transferData.setEndDate(validityInfo.getEndDate())
         }
@@ -562,7 +585,7 @@ internal class TTLockSDKApi : TTLockSdkApiBase() {
         transferData.setEndDate(endDate)
         CommandUtil.U_checkUserTime(transferData)
     }
-    //********************************卷闸门***测试未通过******************************
+    // ********************************卷闸门***测试未通过******************************
     /**
      *
      * @param controlAction the key witch is pressed
@@ -615,8 +638,8 @@ internal class TTLockSDKApi : TTLockSdkApiBase() {
     }
 
     fun setPassageMode(config: PassageModeConfig, lockData: LockData) {
-        val type: PassageModeType = config.getModeType()
-        val weekDays: String = config.getRepeatWeekOrDays()
+        val type: PassageModeType = config.getModeType()!!
+        val weekDays: String ?= config.getRepeatWeekOrDays()
         //        if (type == PassageModeType.Weekly) {
 //            weekDays = DigitUtil.convertWeekDays(weekDays);
 //        }
@@ -632,8 +655,8 @@ internal class TTLockSDKApi : TTLockSdkApiBase() {
     }
 
     fun deletePassageMode(config: PassageModeConfig, lockData: LockData) {
-        val type: PassageModeType = config.getModeType()
-        val weekDays: String = config.getRepeatWeekOrDays()
+        val type: PassageModeType = config.getModeType()!!
+        val weekDays: String? = config.getRepeatWeekOrDays()
         //        if (type == PassageModeType.Weekly) {
 //            weekDays = DigitUtil.convertWeekDays(weekDays);
 //        }
@@ -731,7 +754,7 @@ internal class TTLockSDKApi : TTLockSdkApiBase() {
         CommandUtil.A_checkAdmin(transferData)
     }
 
-    fun activateLiftFloors(activateFloors: List<Int?>?, currentDate: Long, lockData: LockData) {
+    fun activateLiftFloors(activateFloors: List<Int>?, currentDate: Long, lockData: LockData) {
         val transferData: TransferData = getPreparedData(lockData)
         transferData.setAPICommand(APICommand.OP_ACTIVATE_FLOORS)
         transferData.setActivateFloors(activateFloors)
@@ -747,7 +770,7 @@ internal class TTLockSDKApi : TTLockSdkApiBase() {
         val transferData: TransferData = getPreparedData(lockData)
         transferData.setAPICommand(APICommand.OP_SET_SWITCH)
         transferData.setOp(ttLockConfigType.getItem())
-        if (ttLockConfigType == TTLockConfigType.WIFI_LOCK_POWER_SAVING_MODE) { //省电模式 这里 0 表示开启  跟其它配置项正好相反
+        if (ttLockConfigType == TTLockConfigType.WIFI_LOCK_POWER_SAVING_MODE) { // 省电模式 这里 0 表示开启  跟其它配置项正好相反
             transferData.setOpValue(if (enable) 0 else ttLockConfigType.getItem())
         } else {
             transferData.setOpValue(if (enable) ttLockConfigType.getItem() else 0)
@@ -765,12 +788,12 @@ internal class TTLockSDKApi : TTLockSdkApiBase() {
     private fun getPreparedData(lockData: LockData): TransferData {
         val transferData = TransferData()
         var aesKeyArray: ByteArray? = null
-        val aesKeyStr: String = lockData.getAesKeyStr()
+        val aesKeyStr: String? = lockData.getAesKeyStr()
         if (!TextUtils.isEmpty(aesKeyStr)) {
-            aesKeyArray = DigitUtil.convertAesKeyStrToBytes(aesKeyStr)
+            aesKeyArray = DigitUtil.convertAesKeyStrToBytes(aesKeyStr!!)
         }
         transferData.setmUid(lockData.getUid())
-        transferData.setLockVersion(GsonUtil.toJson<LockVersion>(lockData.getLockVersion()))
+        transferData.setLockVersion(GsonUtil.toJson<LockVersion>(lockData.getLockVersion()!!))
         transferData.setAdminPs(lockData.getAdminPwd())
         transferData.setUnlockKey(lockData.getLockKey())
         transferData.setLockFlagPos(lockData.getLockFlagPos())
@@ -779,7 +802,7 @@ internal class TTLockSDKApi : TTLockSdkApiBase() {
         return transferData
     }
 
-    //todo:
+    // todo:
     private fun setLockSwitch(lockData: LockData) {}
     fun setNBAwakeModes(nbAwakeConfig: NBAwakeConfig?, lockData: LockData) {
         val transferData: TransferData = getPreparedData(lockData)

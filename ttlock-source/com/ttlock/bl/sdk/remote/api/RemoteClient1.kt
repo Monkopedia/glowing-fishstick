@@ -1,6 +1,5 @@
 package com.ttlock.bl.sdk.remote.api
 
-import android.Manifest
 import com.ttlock.bl.sdk.device.Remote
 import com.ttlock.bl.sdk.remote.model.ConnectParam
 import com.ttlock.bl.sdk.remote.model.OperationType
@@ -19,12 +18,10 @@ class RemoteClient private constructor() {
         private val mInstance = RemoteClient()
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH)
     fun isBLEEnabled(context: Context): Boolean {
         return mApi.isBLEEnabled(context)
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH)
     fun requestBleEnable(activity: Activity) {
         mApi.requestBleEnable(activity)
     }
@@ -33,13 +30,11 @@ class RemoteClient private constructor() {
         mApi.prepareBTService(context)
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH_ADMIN)
     fun startScan(callback: ScanRemoteCallback?) {
         RemoteCallbackManager.Companion.getInstance().setScanCallback(callback)
         mApi.startScan(callback)
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH_ADMIN)
     fun stopScan() {
         mApi.stopScanGateway()
         RemoteCallbackManager.Companion.getInstance().clearScanCallback()
@@ -68,7 +63,7 @@ class RemoteClient private constructor() {
 
     fun getRemoteSystemInfo(remoteMac: String, callback: GetRemoteSystemInfoCallback) {
         if (!RemoteCallbackManager.Companion.getInstance()
-                .isBusy(OperationType.GET_DEVICE_INFO, callback)
+            .isBusy(OperationType.GET_DEVICE_INFO, callback)
         ) {
             val bluetoothDevice: BluetoothDevice =
                 BluetoothAdapter.getDefaultAdapter().getRemoteDevice(remoteMac)

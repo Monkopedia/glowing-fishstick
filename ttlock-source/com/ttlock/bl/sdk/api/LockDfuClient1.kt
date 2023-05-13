@@ -1,7 +1,9 @@
 package com.ttlock.bl.sdk.api
 
-import android.content.Context
 import com.ttlock.bl.sdk.callback.DfuCallback
+
+import android.util.Context
+import com.ttlock.bl.sdk.callback.GetLockSystemInfoCallback
 
 /**
  * Created by TTLock on 2017/8/16.
@@ -14,13 +16,13 @@ class LockDfuClient {
     }
 
     private object InstanceHolder {
-        private val mInstance = LockDfuClient()
+        val mInstance = LockDfuClient()
     }
 
     fun getLockSystemInfo(
         lockData: String?,
         lockMac: String?,
-        callback: GetLockSystemInfoCallback?
+        callback: GetLockSystemInfoCallback
     ) {
         mApi.getLockSystemInfo(lockData, lockMac, callback)
     }
@@ -34,7 +36,7 @@ class LockDfuClient {
         lockMac: String?,
         dfuCallback: DfuCallback?
     ) {
-        //TODO:校验值是否为null
+        // TODO:校验值是否为null
         mApi.startDfu(context, clientId, accessToken, lockid, lockData, lockMac, dfuCallback)
     }
 
@@ -45,7 +47,7 @@ class LockDfuClient {
         firmwarePackage: String?,
         dfuCallback: DfuCallback?
     ) {
-        //TODO:校验值是否为null
+        // TODO:校验值是否为null
         mApi.startDfu(context, lockData, lockMac, firmwarePackage, dfuCallback)
     }
 

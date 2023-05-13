@@ -3,6 +3,7 @@ package com.ttlock.bl.sdk.gateway.api
 import android.content.Context
 import com.ttlock.bl.sdk.gateway.callback.DfuCallback
 
+import android.util.Context
 /**
  * Created by TTLock on 2017/8/16.
  */
@@ -25,7 +26,7 @@ class GatewayDfuClient {
         gatewayMac: String?,
         dfuCallback: DfuCallback?
     ) {
-        //TODO:校验值是否为null
+        // TODO:校验值是否为null
         mApi.startDfu(context, clientId, accessToken, gatewayId, gatewayMac, dfuCallback)
     }
 
