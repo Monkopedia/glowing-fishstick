@@ -9,5 +9,5 @@ import com.ttlock.bl.sdk.gateway.model.GatewayError
  */
 interface GetNetworkMacCallback : GatewayCallback {
     fun onGetNetworkMacSuccess(networkMac: String?)
-    override fun onFail(error: GatewayError?)
+    override fun onFail(error: GatewayError)
 }

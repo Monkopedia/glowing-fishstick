@@ -1,16 +1,36 @@
 package com.ttlock.bl.sdk.gateway.api
 
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCallback
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
+import android.bluetooth.BluetoothGattService
+import android.bluetooth.BluetoothProfile
+import android.util.Context
+import android.util.Handler
+import android.util.TextUtils
+import com.ttlock.bl.sdk.api.ExtendedBluetoothDevice
+import com.ttlock.bl.sdk.executor.AppExecutors
 import com.ttlock.bl.sdk.gateway.callback.ConfigIpCallback
 import com.ttlock.bl.sdk.gateway.callback.ConnectCallback
 import com.ttlock.bl.sdk.gateway.callback.EnterDfuCallback
+import com.ttlock.bl.sdk.gateway.callback.GatewayCallback
+import com.ttlock.bl.sdk.gateway.callback.InitGatewayCallback
+import com.ttlock.bl.sdk.gateway.callback.ScanWiFiByGatewayCallback
 import com.ttlock.bl.sdk.gateway.command.Command
 import com.ttlock.bl.sdk.gateway.command.CommandUtil
+import com.ttlock.bl.sdk.gateway.model.ConfigureGatewayInfo
 import com.ttlock.bl.sdk.gateway.model.DeviceInfo
-import java.lang.Exception
-import java.util.*
+import com.ttlock.bl.sdk.gateway.model.GatewayError
+import com.ttlock.bl.sdk.gateway.model.WiFi
+import com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.LogUtil
+import java.util.Arrays
+import java.util.LinkedList
+import java.util.UUID
 
-import android.util.Context
 /**
  * Created by TTLock on 2019/3/11.
  */
@@ -60,20 +80,20 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
     }
 
-    fun connect(mac: String?) {
-        val bleDevice: BluetoothDevice = mBluetoothAdapter.getRemoteDevice(mac)
+    fun connect(mac: String) {
+        val bleDevice: BluetoothDevice = mBluetoothAdapter!!.getRemoteDevice(mac)
         connect(ExtendedBluetoothDevice(bleDevice))
     }
 
-    fun connect(extendedBluetoothDevice: ExtendedBluetoothDevice?) {
+    fun connect(extendedBluetoothDevice: ExtendedBluetoothDevice) {
         curCommand = 0
         device = extendedBluetoothDevice
-        val address: String = device.getAddress()
-        val bleDevice: BluetoothDevice = mBluetoothAdapter.getRemoteDevice(address)
+        val address: String = device!!.getAddress()
+        val bleDevice: BluetoothDevice = mBluetoothAdapter!!.getRemoteDevice(address)
         clear()
         removeConnectTimeout()
         startConnectTimeout()
-        mBluetoothGatt = bleDevice.connectGatt(context, false, this)
+        mBluetoothGatt = bleDevice.connectGatt(context!!, false, this)
     }
 
     //    public GattCallbackHelper(BluetoothGatt mBluetoothGatt) {
@@ -108,21 +128,21 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         curCommand = command[2]
         LogUtil.d("send datas:" + DigitUtil.byteArrayToHexString(command), DBG)
         if (dataQueue == null) dataQueue = LinkedList<ByteArray>()
-        dataQueue.clear()
+        dataQueue!!.clear()
         var startPos = 0
         while (len > 0) {
             val ln = Math.min(len, 20)
             val data = ByteArray(ln)
             System.arraycopy(command, startPos, data, 0, ln)
-            dataQueue.add(data)
+            dataQueue!!.add(data)
             len -= 20
             startPos += 20
         }
         if (mWriteCharacteristic != null && mBluetoothGatt != null) {
             try {
                 hasRecDataLen = 0 // 发送前恢复接收数据的起始位置
-                mWriteCharacteristic.setValue(dataQueue.poll())
-                mBluetoothGatt.writeCharacteristic(mWriteCharacteristic)
+                mWriteCharacteristic!!.setValue(dataQueue!!.poll())
+                mBluetoothGatt!!.writeCharacteristic(mWriteCharacteristic!!)
             } catch (e: Exception) {
                 // TODO:
             }
@@ -130,14 +150,14 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
             ConnectManager.Companion.getInstance().setDisconnected()
             callback = GatewayCallbackManager.Companion.getInstance().getCallback()
             if (callback != null) {
-                callback.onFail(GatewayError.FAILED)
+                callback!!.onFail(GatewayError.FAILED)
             }
             LogUtil.d("mBluetoothGatt:$mBluetoothGatt", DBG)
             LogUtil.d("mNotifyCharacteristic or mBluetoothGatt is null", DBG)
         }
     }
 
-    fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+    override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
         super.onConnectionStateChange(gatt, status, newState)
         if (mBluetoothGatt !== gatt) return
         try {
@@ -171,24 +191,24 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         if (callback != null) {
             when (curCommand) {
                 Command.Companion.COMM_CONFIGURE_WIFI -> {
-                    callback.onFail(GatewayError.FAILED_TO_CONFIGURE_ROUTER)
+                    callback!!.onFail(GatewayError.FAILED_TO_CONFIGURE_ROUTER)
                     return
                 }
                 Command.Companion.COMM_CONFIGURE_SERVER -> {
-                    callback.onFail(GatewayError.FAILED_TO_CONFIGURE_SERVER)
+                    callback!!.onFail(GatewayError.FAILED_TO_CONFIGURE_SERVER)
                     return
                 }
                 Command.Companion.COMM_CONFIGURE_ACCOUNT -> {
-                    callback.onFail(GatewayError.FAILED_TO_CONFIGURE_ACCOUNT)
+                    callback!!.onFail(GatewayError.FAILED_TO_CONFIGURE_ACCOUNT)
                     return
                 }
                 else -> {
-                    if (curCommand.toInt() != 0) callback.onFail(GatewayError.COMMUNICATION_DISCONNECTED)
+                    if (curCommand.toInt() != 0) callback!!.onFail(GatewayError.COMMUNICATION_DISCONNECTED)
                     return
                 }
             }
         } else {
-            val mConnectCallback: ConnectCallback =
+            val mConnectCallback: ConnectCallback? =
                 GatewayCallbackManager.Companion.getInstance().getConnectCallback()
             LogUtil.d("mConnectCallback:$mConnectCallback")
             if (mConnectCallback != null) {
@@ -197,7 +217,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         }
     }
 
-    fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+    override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
         super.onServicesDiscovered(gatt, status)
         LogUtil.d("")
         if (status == BluetoothGatt.GATT_SUCCESS) {
@@ -207,8 +227,8 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
             }
             service = gatt.getService(UUID.fromString(DEVICE_INFORMATION_SERVICE))
             if (service != null) {
-                val gattCharacteristics: List<BluetoothGattCharacteristic> =
-                    service.getCharacteristics()
+                val gattCharacteristics: List<BluetoothGattCharacteristic>? =
+                    service!!.getCharacteristics()
                 if (gattCharacteristics != null && gattCharacteristics.size > 0) {
                     for (gattCharacteristic in gattCharacteristics) {
                         LogUtil.d(gattCharacteristic.getUuid().toString(), DBG)
@@ -244,7 +264,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         }
     }
 
-    fun onCharacteristicRead(
+    override fun onCharacteristicRead(
         gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic,
         status: Int
@@ -255,21 +275,23 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
             if (characteristic === modelNumberCharacteristic) {
                 deviceInfo = DeviceInfo()
                 deviceInfo!!.modelNum = String(characteristic.getValue())
-                gatt.readCharacteristic(if (wifiMacCharacteristic != null) wifiMacCharacteristic else hardwareRevisionCharacteristic)
+                gatt.readCharacteristic(
+                    wifiMacCharacteristic ?: hardwareRevisionCharacteristic ?: error("error")
+                )
             } else if (characteristic === wifiMacCharacteristic) {
                 deviceInfo!!.networkMac = String(characteristic.getValue())
-                gatt.readCharacteristic(hardwareRevisionCharacteristic)
+                gatt.readCharacteristic(hardwareRevisionCharacteristic!!)
             } else if (characteristic === hardwareRevisionCharacteristic) {
                 deviceInfo!!.hardwareRevision = String(characteristic.getValue())
-                gatt.readCharacteristic(firmwareRevisionCharacteristic)
+                gatt.readCharacteristic(firmwareRevisionCharacteristic!!)
             } else if (characteristic === firmwareRevisionCharacteristic) {
                 deviceInfo!!.firmwareRevision = String(characteristic.getValue())
                 LogUtil.d("deviceInfo:$deviceInfo")
                 service = gatt.getService(UUID.fromString(UUID_SERVICE))
                 if (service != null) {
-                    val gattCharacteristics: List<BluetoothGattCharacteristic> =
-                        service.getCharacteristics()
-                    if (gattCharacteristics != null && gattCharacteristics.size > 0) {
+                    val gattCharacteristics: List<BluetoothGattCharacteristic>? =
+                        service!!.getCharacteristics()
+                    if (gattCharacteristics != null && gattCharacteristics.isNotEmpty()) {
                         for (gattCharacteristic in gattCharacteristics) {
                             LogUtil.d(gattCharacteristic.getUuid().toString(), DBG)
                             if (gattCharacteristic.getUuid().toString().equals(UUID_WRITE)) {
@@ -300,7 +322,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         }
     }
 
-    fun onCharacteristicWrite(
+    override fun onCharacteristicWrite(
         gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic,
         status: Int
@@ -311,8 +333,8 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         }
         LogUtil.d("gatt=$gatt characteristic=$characteristic status=$status", DBG)
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            if (dataQueue.size > 0) {
-                characteristic.setValue(dataQueue.poll())
+            if (dataQueue!!.size > 0) {
+                characteristic.setValue(dataQueue!!.poll())
                 // TODO:写成功再写下一个
                 gatt.writeCharacteristic(characteristic)
             } else {
@@ -323,7 +345,10 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         super.onCharacteristicWrite(gatt, characteristic, status)
     }
 
-    fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+    override fun onCharacteristicChanged(
+        gatt: BluetoothGatt,
+        characteristic: BluetoothGattCharacteristic
+    ) {
         super.onCharacteristicChanged(gatt, characteristic)
         LogUtil.d("")
         if (mBluetoothGatt !== gatt) return
@@ -364,12 +389,16 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         }
     }
 
-    fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor?, status: Int) {
+    override fun onDescriptorWrite(
+        gatt: BluetoothGatt,
+        descriptor: BluetoothGattDescriptor,
+        status: Int
+    ) {
         super.onDescriptorWrite(gatt, descriptor, status)
         if (mBluetoothGatt !== gatt) return
         LogUtil.d("")
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            if (device != null) CommandUtil.gatewayEcho(device.getAddress())
+            if (device != null) CommandUtil.gatewayEcho(device!!.getAddress())
         } else {
             // TODO:
         }
@@ -393,7 +422,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
             Runnable {
                 LogUtil.d("values:" + DigitUtil.byteArrayToHexString(values))
                 val command = Command(values)
-                command.mac = device.getAddress()
+                command.mac = device!!.getAddress()
                 val data = command.getData()
                 LogUtil.d("command:" + DigitUtil.byteToHex(command.getCommand()))
                 LogUtil.d("data:" + DigitUtil.byteArrayToHexString(data))
@@ -408,7 +437,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
                 }
                 when (command.getCommand()) {
                     Command.Companion.COMM_ECHO -> connectCallback()
-                    Command.Companion.COMM_GET_NEARBY_SSID -> when (data[0]) {
+                    Command.Companion.COMM_GET_NEARBY_SSID -> when (data[0].toInt()) {
                         0 -> {
                             val len = data[1].toInt()
                             val wiFi = WiFi()
@@ -425,17 +454,15 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
                             (callback as ScanWiFiByGatewayCallback).onScanWiFiByGatewaySuccess()
                             wiFis.clear()
                         }
-                        else -> callback.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
+                        else -> callback!!.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
                     }
                     Command.Companion.COMM_CONFIGURE_WIFI -> {
                         curCommand = 0
                         if (data[0].toInt() == 0) {
-                            CommandUtil.configureServer(configureInfo)
+                            CommandUtil.configureServer(configureInfo!!)
                         } else {
                             if (data[0].toInt() != 2) {
-                                if (callback != null) {
-                                    callback.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
-                                }
+                                callback?.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
                             } else { // 命令接收成功，正在处理
                                 curCommand = Command.Companion.COMM_CONFIGURE_WIFI
                             }
@@ -443,10 +470,8 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
                     }
                     Command.Companion.COMM_CONFIGURE_SERVER -> {
                         curCommand = 0
-                        if (data[0].toInt() == 0) CommandUtil.configureAccount(configureInfo) else {
-                            if (callback != null) {
-                                callback.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
-                            }
+                        if (data[0].toInt() == 0) CommandUtil.configureAccount(configureInfo!!) else {
+                            callback?.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
                         }
                     }
                     Command.Companion.COMM_CONFIGURE_ACCOUNT -> {
@@ -456,16 +481,14 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
                             (callback as InitGatewayCallback).onInitGatewaySuccess(deviceInfo)
                             LogUtil.d("success")
                         } else {
-                            if (callback != null) {
-                                callback.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
-                            }
+                            callback?.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
                         }
                     }
                     Command.Companion.COMM_ENTER_DFU -> {
                         if (data[0].toInt() == 0) {
                             (callback as EnterDfuCallback).onEnterDfuSuccess()
                         } else {
-                            callback.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
+                            callback!!.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
                         }
                         // 清理缓存的回调类型
                         GatewayCallbackManager.Companion.getInstance().clearAllCallback()
@@ -473,7 +496,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
                     Command.Companion.COMM_CONFIG_IP -> if (data[0].toInt() == 0) {
                         (callback as ConfigIpCallback).onConfigIpSuccess()
                     } else {
-                        callback.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
+                        callback!!.onFail(GatewayError.Companion.getInstance(data[0].toInt()))
                     }
                 }
             }
@@ -506,16 +529,12 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
     }
 
     private fun close() {
-        if (mBluetoothGatt != null) {
-            mBluetoothGatt.close()
-            mBluetoothGatt = null
-        }
+        mBluetoothGatt?.close()
+        mBluetoothGatt = null
     }
 
     fun disconnect() {
-        if (mBluetoothGatt != null) {
-            mBluetoothGatt.disconnect()
-        }
+        mBluetoothGatt?.disconnect()
     }
 
     fun clear() {
@@ -539,10 +558,10 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
     fun connectTimeoutCallback() {
         callback = GatewayCallbackManager.Companion.getInstance().getCallback()
         if (callback != null) {
-            callback.onFail(GatewayError.CONNECT_TIMEOUT)
+            callback!!.onFail(GatewayError.CONNECT_TIMEOUT)
         } else {
             ConnectManager.Companion.getInstance().setDisconnected()
-            val mConnectCallback: ConnectCallback =
+            val mConnectCallback: ConnectCallback? =
                 GatewayCallbackManager.Companion.getInstance().getConnectCallback()
             if (mConnectCallback != null) {
                 mConnectCallback.onDisconnected()
@@ -552,7 +571,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
 
     fun getNetworkMac(): String {
         return if (deviceInfo != null) {
-            deviceInfo!!.networkMac
+            deviceInfo!!.networkMac!!
         } else ""
     }
 

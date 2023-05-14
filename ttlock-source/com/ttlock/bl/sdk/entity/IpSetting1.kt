@@ -1,6 +1,7 @@
 package com.ttlock.bl.sdk.entity
 
-import android.text.TextUtils
+import android.util.TextUtils
+import com.ttlock.bl.sdk.util.LogUtil
 import java.util.*
 
 class IpSetting {

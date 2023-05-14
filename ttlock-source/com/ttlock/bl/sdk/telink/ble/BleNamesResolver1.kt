@@ -6,18 +6,14 @@ import android.util.SparseArray
  * Created by Administrator on 2017/2/23.
  */
 object BleNamesResolver {
-    private var mAppearance: SparseArray<String>? = null
-    private var mCharacteristics: HashMap<String, String>? = null
-    private var mHeartRateSensorLocation: SparseArray<String>? = null
-    private val mServices: HashMap<String?, String?> = HashMap<Any?, Any?>()
-    private var mValueFormats: SparseArray<String>? = null
+    private var mAppearance: SparseArray<String> = SparseArray(1)
+    private var mCharacteristics: HashMap<String, String> = HashMap()
+    private var mHeartRateSensorLocation: SparseArray<String> = SparseArray(1)
+    private val mServices: HashMap<String?, String?> = HashMap()
+    private var mValueFormats: SparseArray<String> = SparseArray(1)
     const val DEFAULT_CHARACTERISTIC_NAME = "Unknown Characteristic"
 
     init {
-        mCharacteristics = HashMap<Any?, Any?>()
-        mValueFormats = SparseArray(1)
-        mAppearance = SparseArray(1)
-        mHeartRateSensorLocation = SparseArray(1)
         mServices["00001811-0000-1000-8000-00805f9b34fb"] = "Alert Notification Service"
         mServices["0000180f-0000-1000-8000-00805f9b34fb"] = "Battery Service"
         mServices["00001810-0000-1000-8000-00805f9b34fb"] = "Blood Pressure"
@@ -166,7 +162,7 @@ object BleNamesResolver {
     }
 
     fun resolveCharacteristicName(paramString: String?): String? {
-        var str = mCharacteristics!![paramString]
+        var str = mCharacteristics[paramString]
         if (str == null) str = DEFAULT_CHARACTERISTIC_NAME
         return str
     }

@@ -1,9 +1,8 @@
 package com.ttlock.bl.sdk.gateway.api
 
-import android.content.Context
+import android.util.Context
 import com.ttlock.bl.sdk.gateway.callback.DfuCallback
 
-import android.util.Context
 /**
  * Created by TTLock on 2017/8/16.
  */
@@ -15,7 +14,7 @@ class GatewayDfuClient {
     }
 
     private object InstanceHolder {
-        private val mInstance = GatewayDfuClient()
+        val mInstance = GatewayDfuClient()
     }
 
     fun startDfu(

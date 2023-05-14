@@ -19,7 +19,7 @@ object ResponseService {
      */
     fun getRecoverData(clientId: String?, accessToken: String?, lockId: Int): String {
         val url = ResponseService.actionUrlV3 + "/lock/getRecoverData"
-        val params: HashMap<*, *> = HashMap<Any?, Any?>()
+        val params: HashMap<String?, String?> = HashMap<String?, String?>()
         params["clientId"] = clientId
         params["accessToken"] = accessToken
         params["lockId"] = lockId.toString()
@@ -34,7 +34,7 @@ object ResponseService {
      */
     fun getUpgradePackage(clientId: String?, accessToken: String?, lockId: Int): String {
         val url = ResponseService.actionUrlV3 + "/lock/getUpgradePackage"
-        val params: HashMap<*, *> = HashMap<Any?, Any?>()
+        val params: HashMap<String?, String?> = HashMap<String?, String?>()
         params["clientId"] = clientId
         params["accessToken"] = accessToken
         params["lockId"] = lockId.toString()
@@ -49,7 +49,7 @@ object ResponseService {
         lockData: String?
     ): String {
         val url = ResponseService.actionUrlV3 + "/lock/upgradeSuccess"
-        val params: HashMap<*, *> = HashMap<Any?, Any?>()
+        val params: HashMap<String?, String?> = HashMap<String?, String?>()
         params["clientId"] = clientId
         params["accessToken"] = accessToken
         params["lockId"] = lockId.toString()
@@ -74,7 +74,7 @@ object ResponseService {
         records: String?
     ): String {
         val url = ResponseService.actionUrlV3 + "/lockRecord/upload"
-        val params: HashMap<*, *> = HashMap<Any?, Any?>()
+        val params: HashMap<String?, String?> = HashMap<String?, String?>()
         params["clientId"] = clientId
         params["accessToken"] = accessToken
         params["lockId"] = lockId.toString()
@@ -85,7 +85,7 @@ object ResponseService {
 
     fun enterDfuMode(clientId: String?, accessToken: String?, gatewayId: Int): String {
         val url = ResponseService.actionUrlV3 + "/gateway/setUpgradeMode"
-        val params: HashMap<*, *> = HashMap<Any?, Any?>()
+        val params: HashMap<String?, String?> = HashMap<String?, String?>()
         params["clientId"] = clientId
         params["accessToken"] = accessToken
         params["gatewayId"] = gatewayId.toString()
@@ -95,7 +95,7 @@ object ResponseService {
 
     fun getPlugUpgradePackage(clientId: String?, accessToken: String?, gatewayId: Int): String {
         val url = ResponseService.actionUrlV3 + "/gateway/getUpgradePackage"
-        val params: HashMap<*, *> = HashMap<Any?, Any?>()
+        val params: HashMap<String?, String?> = HashMap<String?, String?>()
         params["clientId"] = clientId
         params["accessToken"] = accessToken
         params["gatewayId"] = gatewayId.toString()
@@ -105,7 +105,7 @@ object ResponseService {
 
     fun plugUpgradeSuccess(clientId: String?, accessToken: String?, gatewayId: Int): String {
         val url = ResponseService.actionUrlV3 + "/gateway/upgradeSuccess"
-        val params: HashMap<*, *> = HashMap<Any?, Any?>()
+        val params: HashMap<String?, String?> = HashMap<String?, String?>()
         params["clientId"] = clientId
         params["accessToken"] = accessToken
         params["gatewayId"] = gatewayId.toString()

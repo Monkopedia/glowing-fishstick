@@ -1,6 +1,17 @@
 package com.ttlock.bl.sdk.net
 
-import android.text.TextUtils
+import android.util.TextUtils
+import com.ttlock.bl.sdk.util.LogUtil
+import okhttp.FormBody
+import okhttp.MediaType
+import okhttp.OkHttpClient
+import okhttp.Request
+import okhttp.Request.Builder
+import okhttp.RequestBody
+import okhttp.Response
+import java.io.IOException
+import java.util.concurrent.TimeUnit
+
 
 class OkHttpRequest private constructor() {
     init {
@@ -9,7 +20,7 @@ class OkHttpRequest private constructor() {
 
     companion object {
         private const val DBG = true
-        private val client: OkHttpClient = Builder().readTimeout(10, TimeUnit.SECONDS).build()
+        private val client: OkHttpClient = OkHttpClient.Builder().readTimeout(10, TimeUnit.SECONDS).build()
         private val DEFAULT: MediaType = MediaType.parse("application/x-www-form-urlencoded")
         private val JSON: MediaType = MediaType.parse("application/json; charset=utf-8")
         private fun getParamUrl(params: Map<String, String>?): String {
@@ -45,7 +56,7 @@ class OkHttpRequest private constructor() {
         }
 
         fun sendPost(url: String, params: Map<String?, String?>?): String {
-            val formBodyBuilder: FormBody.Builder = Builder()
+            val formBodyBuilder: FormBody.Builder = FormBody.Builder()
             LogUtil.d("url:$url", DBG)
             if (params != null) {
                 for (key in params.keys) {

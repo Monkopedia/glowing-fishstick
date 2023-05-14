@@ -1,6 +1,7 @@
 package com.ttlock.bl.sdk.gateway.util
 
-import android.text.TextUtils
+import android.util.TextUtils
+
 
 object GatewayUtil {
     fun convertIp2Bytes(ip: String): ByteArray? {

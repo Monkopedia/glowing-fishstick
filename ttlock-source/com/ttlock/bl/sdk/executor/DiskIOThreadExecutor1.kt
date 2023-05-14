@@ -15,7 +15,7 @@ class DiskIOThreadExecutor : Executor {
         mDiskIO = Executors.newFixedThreadPool(1)
     }
 
-    override fun execute(@NonNull command: Runnable) {
+    override fun execute(command: Runnable) {
         mDiskIO.execute(command)
         mDiskIO.shutdown()
     }

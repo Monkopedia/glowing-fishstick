@@ -5,8 +5,9 @@ import com.ttlock.bl.sdk.telink.util.TelinkLog
 
 class OtaPacketParser {
     private var total = 0
-    private var index = -1
-    private var data: ByteArray?
+    var index = -1
+    private set
+    private var data: ByteArray? = null
     private var progress = 0
     fun set(data: ByteArray?) {
         this.clear()
@@ -135,6 +136,7 @@ class OtaPacketParser {
         return progress
     }
 
+    @JvmName("getIndex1")
     fun getIndex(): Int {
         return index
     }

@@ -19,13 +19,15 @@ class Context {
 
     fun unregisterReceiver(receiver: BroadcastReceiver) {}
 
-    fun getSystemService(name: String): Any = BluetoothManager()
+    fun getSystemService(name: String): Any = if (name == BLUETOOTH_SERVICE) BluetoothManager()  else if (WIFI_SERVICE == name) WifiManager() else ConnectivityManager()
     fun getCacheDir(): File {
         error("")
     }
 
     companion object {
+        const val WIFI_SERVICE: String = "wifi_service"
         const val BLUETOOTH_SERVICE = "bluetooth_service"
+        const val CONNECTIVITY_SERVICE = "connectivity_service"
     }
 }
 

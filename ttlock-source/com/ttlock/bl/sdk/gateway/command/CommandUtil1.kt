@@ -14,7 +14,7 @@ object CommandUtil {
     @Throws(UnsupportedEncodingException::class)
     fun configureWifi(configureInfo: ConfigureGatewayInfo) {
         val command: Command = Command(Command.Companion.COMM_CONFIGURE_WIFI)
-        command.mac = GattCallbackHelper.Companion.getInstance().getDevice().getAddress()
+        command.mac = GattCallbackHelper.Companion.getInstance().getDevice()!!.getAddress()
         val ssidBytes = configureInfo.ssid.toByteArray(charset("UTF-8"))
         LogUtil.d("ssid:" + DigitUtil.byteArrayToHexString(ssidBytes))
         val ssidLen = ssidBytes.size
@@ -30,7 +30,7 @@ object CommandUtil {
 
     fun configureServer(configureInfo: ConfigureGatewayInfo) {
         val command: Command = Command(Command.Companion.COMM_CONFIGURE_SERVER)
-        command.mac = GattCallbackHelper.Companion.getInstance().getDevice().getAddress()
+        command.mac = GattCallbackHelper.Companion.getInstance().getDevice()!!.getAddress()
         val addLen = configureInfo.server.length
         val data = ByteArray(1 + addLen + 2)
         data[0] = addLen.toByte()
@@ -43,11 +43,11 @@ object CommandUtil {
 
     fun configureAccount(configureInfo: ConfigureGatewayInfo) {
         val command: Command = Command(Command.Companion.COMM_CONFIGURE_ACCOUNT)
-        command.mac = GattCallbackHelper.Companion.getInstance().getDevice().getAddress()
-        val pwd = configureInfo.md5UserPwd
-        val pwdLen = pwd.length
-        val name = configureInfo.correntNameBytes
-        val nameLen = name.size
+        command.mac = GattCallbackHelper.Companion.getInstance().getDevice()!!.getAddress()
+        val pwd = configureInfo.getMd5UserPwd()
+        val pwdLen = pwd!!.length
+        val name = configureInfo.getCorrentNameBytes()
+        val nameLen = name!!.size
         val data = ByteArray(4 + pwdLen + 4 + 4 + nameLen)
         System.arraycopy(DigitUtil.integerToByteArray(configureInfo.uid), 0, data, 0, 4)
         System.arraycopy(pwd.toByteArray(), 0, data, 4, pwdLen)

@@ -1,24 +1,23 @@
 package com.ttlock.bl.sdk.device
 
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.ScanResult
+
 /**
  * Created by TTLock on 2019/5/16.
  */
 class WirelessDoorSensor : TTDevice {
     private var scene: Byte = 0
 
-    /**
-     * 搜索到设备的时间
-     */
-    private var date = System.currentTimeMillis()
-
-    constructor(scanResult: ScanResult?) : super(scanResult) {
+    constructor(scanResult: ScanResult) : super(scanResult) {
         initial()
     }
 
-    constructor(device: BluetoothDevice?) : super(device) {
+    constructor(device: BluetoothDevice) : super(device) {
     }
 
     override fun initial() {
+        val scanRecord = scanRecord!!
         val scanRecordLength = scanRecord.size
         var index = 0
         // TODO:越界
@@ -57,43 +56,4 @@ class WirelessDoorSensor : TTDevice {
         }
     }
 
-    fun describeContents(): Int {
-        return 0
-    }
-
-    fun writeToParcel(dest: Parcel, flags: Int) {
-        dest.writeByte(scene)
-        dest.writeLong(this.date)
-        dest.writeParcelable(device, flags)
-        dest.writeByteArray(scanRecord)
-        dest.writeString(name)
-        dest.writeString(mAddress)
-        dest.writeInt(rssi)
-        dest.writeInt(batteryCapacity)
-        dest.writeByte(if (isSettingMode) 1.toByte() else 0.toByte())
-    }
-
-    constructor(`in`: Parcel) {
-        scene = `in`.readByte()
-        this.date = `in`.readLong()
-        device = `in`.readParcelable(BluetoothDevice::class.java.getClassLoader())
-        scanRecord = `in`.createByteArray()
-        name = `in`.readString()
-        mAddress = `in`.readString()
-        rssi = `in`.readInt()
-        batteryCapacity = `in`.readInt()
-        isSettingMode = `in`.readByte() !== 0
-    }
-
-    companion object {
-        val CREATOR: Creator<WirelessDoorSensor> = object : Creator<WirelessDoorSensor?>() {
-            fun createFromParcel(source: Parcel?): WirelessDoorSensor {
-                return WirelessDoorSensor(source)
-            }
-
-            fun newArray(size: Int): Array<WirelessDoorSensor> {
-                return arrayOfNulls(size)
-            }
-        }
-    }
 }

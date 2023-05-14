@@ -16,7 +16,7 @@ interface DfuProgressListener{
     fun onDfuAborted(deviceAddress: String) = Unit
 
     fun onProgressChanged(
-        deviceAddress: String?,
+        deviceAddress: String,
         percent: Int,
         speed: Float,
         avgSpeed: Float,
@@ -42,7 +42,7 @@ open class DfuProgressListenerAdapter : DfuProgressListener{
     override fun onDfuAborted(deviceAddress: String) = Unit
 
     override fun onProgressChanged(
-        deviceAddress: String?,
+        deviceAddress: String,
         percent: Int,
         speed: Float,
         avgSpeed: Float,

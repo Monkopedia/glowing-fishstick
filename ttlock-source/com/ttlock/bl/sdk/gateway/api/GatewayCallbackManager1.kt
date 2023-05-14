@@ -2,6 +2,8 @@ package com.ttlock.bl.sdk.gateway.api
 
 import android.util.SparseArray
 import com.ttlock.bl.sdk.gateway.callback.ConnectCallback
+import com.ttlock.bl.sdk.gateway.callback.GatewayCallback
+import com.ttlock.bl.sdk.gateway.callback.ScanGatewayCallback
 
 /**
  * Created by TTLock on 2019/4/24.
@@ -16,7 +18,7 @@ internal class GatewayCallbackManager private constructor() {
     }
 
     private object InstanceHolder {
-        private val mInstance = GatewayCallbackManager()
+        val mInstance = GatewayCallbackManager()
     }
 
     fun setGatewayScanCallback(callback: ScanGatewayCallback?) {
@@ -39,7 +41,7 @@ internal class GatewayCallbackManager private constructor() {
         return mConnectCallback
     }
 
-    fun isGatewayBusy(type: Int, callback: GatewayCallback?): Boolean {
+    fun isGatewayBusy(type: Int, callback: GatewayCallback): Boolean {
         val isGatewayBusy = false
         //        if(mCallbackArray.size() > 0){
 //            multiConnectFastFail(callback);

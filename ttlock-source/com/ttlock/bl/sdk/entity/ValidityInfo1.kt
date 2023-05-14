@@ -8,18 +8,20 @@ import java.io.Serializable
  * Created by TTLock on 2020/3/19.
  */
 class ValidityInfo : Serializable {
-    private var modeType: Int = ValidityInfo.Companion.TIMED
+    var modeType: Int = ValidityInfo.Companion.TIMED
 
     /**
      * default permanent period
      */
     private var startDate = Constant.permanentStartDate
     private var endDate = Constant.permanentEndDate
-    private var cyclicConfigs: List<CyclicConfig>? = null
+    var cyclicConfigs: List<CyclicConfig>? = null
+    @JvmName("getModeType1")
     fun getModeType(): Int {
         return modeType
     }
 
+    @JvmName("setModeType1")
     fun setModeType(modeType: Int) {
         this.modeType = modeType
     }
@@ -48,10 +50,12 @@ class ValidityInfo : Serializable {
         this.endDate = endDate
     }
 
+    @JvmName("getCyclicConfigs1")
     fun getCyclicConfigs(): List<CyclicConfig>? {
         return cyclicConfigs
     }
 
+    @JvmName("setCyclicConfigs1")
     fun setCyclicConfigs(cyclicConfigs: List<CyclicConfig>?) {
         this.cyclicConfigs = cyclicConfigs
     }
@@ -61,7 +65,7 @@ class ValidityInfo : Serializable {
             return false
         }
         for (cyclicConfig in cyclicConfigs!!) {
-            if (!cyclicConfig.isValidData) {
+            if (!cyclicConfig.isValidData()) {
                 return false
             }
         }

@@ -617,7 +617,7 @@ internal class BluetoothImpl private constructor() {
                     )
                 )
                 if (service != null) {
-                    val gattCharacteristics: List<BluetoothGattCharacteristic> =
+                    val gattCharacteristics: List<BluetoothGattCharacteristic>? =
                         service.getCharacteristics()
                     if (gattCharacteristics != null && gattCharacteristics.size > 0) {
                         for (gattCharacteristic in gattCharacteristics) {
@@ -645,7 +645,7 @@ internal class BluetoothImpl private constructor() {
                 }
                 service = mBluetoothGatt?.getService(UUID.fromString(UUID_SERVICE))
                 if (service != null) {
-                    val gattCharacteristics: List<BluetoothGattCharacteristic> =
+                    val gattCharacteristics: List<BluetoothGattCharacteristic>? =
                         service.getCharacteristics()
                     if (gattCharacteristics != null && gattCharacteristics.size > 0) {
                         for (gattCharacteristic in gattCharacteristics) {
@@ -2858,7 +2858,7 @@ internal class BluetoothImpl private constructor() {
                                         3,
                                         data.size
                                     )
-                                )
+                                )!!
                                 when (currentAPICommand) {
                                     APICommand.OP_GET_DEVICE_INFO -> {
                                         deviceInfo = DeviceInfo()

@@ -15,7 +15,11 @@
  */
 package com.ttlock.bl.sdk.executor
 
-import android.os.Handler
+import android.util.Handler
+import android.util.Looper
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
+
 
 /**
  * Global executor pools for the whole application.
@@ -59,7 +63,7 @@ class AppExecutors internal constructor(
 
     private class MainThreadExecutor : Executor {
         private val mainThreadHandler: Handler = Handler(Looper.getMainLooper())
-        override fun execute(@NonNull command: Runnable) {
+        override fun execute(command: Runnable) {
             mainThreadHandler.post(command)
         }
     }

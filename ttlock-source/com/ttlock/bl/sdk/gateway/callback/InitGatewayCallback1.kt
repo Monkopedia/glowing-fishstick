@@ -10,5 +10,5 @@ import com.ttlock.bl.sdk.gateway.model.GatewayError
  */
 interface InitGatewayCallback : GatewayCallback {
     fun onInitGatewaySuccess(deviceInfo: DeviceInfo?)
-    override fun onFail(error: GatewayError?)
+    override fun onFail(error: GatewayError)
 }

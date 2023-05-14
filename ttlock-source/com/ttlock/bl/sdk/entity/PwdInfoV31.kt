@@ -52,7 +52,7 @@ class PwdInfoV3 {
             return instance
         }
 
-        fun getInstance(year: Int, code: Int, secretKey: String?, deleteDate: Long): PwdInfoV3 {
+        fun getInstance(year: Int, code: Int, secretKey: String, deleteDate: Long): PwdInfoV3 {
             val instance: PwdInfoV3 = PwdInfoV3.Companion.getInstance(year, code, secretKey)
             instance.deleteDate = deleteDate
             return instance

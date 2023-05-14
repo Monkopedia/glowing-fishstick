@@ -11,5 +11,5 @@ import com.ttlock.bl.sdk.gateway.model.WiFi
 interface ScanWiFiByGatewayCallback : GatewayCallback {
     fun onScanWiFiByGateway(wiFis: List<WiFi?>?)
     fun onScanWiFiByGatewaySuccess()
-    override fun onFail(error: GatewayError?)
+    override fun onFail(error: GatewayError)
 }

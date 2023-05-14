@@ -6,6 +6,14 @@ import com.ttlock.bl.sdk.gateway.callback.EnterDfuCallback
 import com.ttlock.bl.sdk.gateway.model.ConnectParam
 import com.ttlock.bl.sdk.gateway.model.OperationType
 import android.util.Context
+import com.ttlock.bl.sdk.api.ExtendedBluetoothDevice
+import com.ttlock.bl.sdk.entity.IpSetting
+import com.ttlock.bl.sdk.gateway.callback.GetNetworkMacCallback
+import com.ttlock.bl.sdk.gateway.callback.InitGatewayCallback
+import com.ttlock.bl.sdk.gateway.callback.ScanGatewayCallback
+import com.ttlock.bl.sdk.gateway.callback.ScanWiFiByGatewayCallback
+import com.ttlock.bl.sdk.gateway.model.ConfigureGatewayInfo
+import com.ttlock.bl.sdk.gateway.model.GatewayError
 
 /**
  * Created by TTLock on 2019/4/24.
@@ -18,15 +26,11 @@ class GatewayClient private constructor() {
     }
 
     private object InstanceHolder {
-        private val mInstance = GatewayClient()
+        val mInstance = GatewayClient()
     }
 
     fun isBLEEnabled(context: Context): Boolean {
         return mApi.isBLEEnabled(context)
-    }
-
-    fun requestBleEnable(activity: Activity) {
-        mApi.requestBleEnable(activity)
     }
 
     fun prepareBTService(context: Context?) {
@@ -43,12 +47,12 @@ class GatewayClient private constructor() {
         //        GatewayCallbackManager.getInstance().clearScanCallback();
     }
 
-    fun connectGateway(mac: String?, connectCallback: ConnectCallback?) {
+    fun connectGateway(mac: String, connectCallback: ConnectCallback?) {
         ConnectManager.Companion.getInstance().connect2Device(mac, connectCallback)
     }
 
     fun connectGateway(
-        extendedBluetoothDevice: ExtendedBluetoothDevice?,
+        extendedBluetoothDevice: ExtendedBluetoothDevice,
         connectCallback: ConnectCallback?
     ) {
         ConnectManager.Companion.getInstance()
@@ -59,7 +63,7 @@ class GatewayClient private constructor() {
         ConnectManager.Companion.getInstance().disconnect()
     }
 
-    fun initGateway(@NonNull configureInfo: ConfigureGatewayInfo?, callback: InitGatewayCallback) {
+    fun initGateway(configureInfo: ConfigureGatewayInfo, callback: InitGatewayCallback) {
         if (ConnectManager.Companion.getInstance().isDeviceConnected()) {
             GatewayCallbackManager.Companion.getInstance()
                 .isGatewayBusy(OperationType.INIT_GATEWAY, callback)
@@ -69,7 +73,7 @@ class GatewayClient private constructor() {
         }
     }
 
-    fun enterDfu(mac: String?, callback: EnterDfuCallback?) {
+    fun enterDfu(mac: String, callback: EnterDfuCallback) {
         GatewayCallbackManager.Companion.getInstance()
             .isGatewayBusy(OperationType.ENTER_DFU_MODE, callback)
         if (ConnectManager.Companion.getInstance().isDeviceConnected()) {

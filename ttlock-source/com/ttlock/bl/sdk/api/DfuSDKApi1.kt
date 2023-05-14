@@ -138,7 +138,7 @@ internal class DfuSDKApi {
         }
 
         override fun onProgressChanged(
-            deviceAddress: String?,
+            deviceAddress: String,
             percent: Int,
             speed: Float,
             avgSpeed: Float,
@@ -747,11 +747,11 @@ internal class DfuSDKApi {
     //        }
     //    };
     private val deviceCallback: DeviceStateCallback = object : DeviceStateCallback {
-        override fun onConnected(device: Device?) {
+        override fun onConnected(device: Device) {
             TelinkLog.w("telink:" + " # onConnected")
         }
 
-        override fun onDisconnected(device: Device?) {
+        override fun onDisconnected(device: Device) {
             TelinkLog.w("telink:" + " # onDisconnected")
             if (telinkDfuDisconnectFailureCallback) {
                 errorCallback(DfuFailed, "disconnected")
@@ -762,7 +762,7 @@ internal class DfuSDKApi {
             TelinkLog.w("telink:" + " # onServicesDiscovered")
             var serviceUUID: UUID? = null
             for (service in services) {
-                for (characteristic in service.getCharacteristics()) {
+                for (characteristic in service.getCharacteristics() ?: emptyList()) {
                     if (characteristic.getUuid()
                         .equals(Device.Companion.CHARACTERISTIC_UUID_WRITE)
                     ) {
@@ -831,7 +831,7 @@ internal class DfuSDKApi {
             telinkDevice!!.setDeviceStateCallback(deviceCallback)
         }
         telinkDfuDisconnectFailureCallback = true
-        telinkDevice!!.connect(mContext)
+        telinkDevice!!.connect(mContext!!)
         //            }
 //        }, 500);
     }

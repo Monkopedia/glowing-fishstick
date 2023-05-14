@@ -8,5 +8,5 @@ import com.ttlock.bl.sdk.gateway.model.GatewayError
  * @author theodore
  */
 interface GatewayCallback {
-    fun onFail(error: GatewayError?)
+    fun onFail(error: GatewayError)
 }

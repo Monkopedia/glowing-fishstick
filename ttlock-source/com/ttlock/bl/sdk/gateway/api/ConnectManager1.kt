@@ -1,9 +1,14 @@
 package com.ttlock.bl.sdk.gateway.api
 
-import android.os.Handler
+import android.util.Handler
+import android.util.Log
+import com.ttlock.bl.sdk.api.ExtendedBluetoothDevice
 import com.ttlock.bl.sdk.gateway.callback.ConnectCallback
+import com.ttlock.bl.sdk.gateway.callback.GatewayCallback
 import com.ttlock.bl.sdk.gateway.model.ConnectParam
+import com.ttlock.bl.sdk.gateway.model.GatewayError
 import com.ttlock.bl.sdk.gateway.model.OperationType
+import com.ttlock.bl.sdk.util.LogUtil
 
 /**
  * Created on  2019/4/12 SetLockTimeCallback 11:30
@@ -17,7 +22,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
     private var connectCallback: ConnectCallback? = null
     private var connect_status = CONNECT_STATUS_UNKNOWN
     private val mDataCheckErrorRunnable = Runnable {
-        val mCallback: GatewayCallback =
+        val mCallback: GatewayCallback? =
             GatewayCallbackManager.Companion.getInstance().getCallback()
         if (mCallback != null) {
             mCallback.onFail(GatewayError.DATA_FORMAT_ERROR)
@@ -30,7 +35,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
     }
 
     private object InstanceHolder {
-        private val mInstance = ConnectManager()
+        val mInstance = ConnectManager()
     }
 
     fun removeDataCheckTimer() {
@@ -54,7 +59,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
     }
 
     @JvmOverloads
-    fun connect2Device(address: String?, connectCallback: ConnectCallback? = this) {
+    fun connect2Device(address: String, connectCallback: ConnectCallback? = this) {
         Log.d("OMG", "==connect2Device=")
         this.connectCallback = connectCallback
         mCurrentMac = address
@@ -98,7 +103,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
             )
             else -> {
                 // 对外 单独提供的  连接回调
-                val mConnectCallback: ConnectCallback =
+                val mConnectCallback: ConnectCallback? =
                     GatewayCallbackManager.Companion.getInstance().getConnectCallback()
                 if (mConnectCallback != null) {
                     Log.d("OMG", "====disconnect==1==")
@@ -126,7 +131,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
     //    }
     override fun onDisconnected() {
         setDisconnected()
-        val mCallback: ConnectCallback =
+        val mCallback: ConnectCallback? =
             GatewayCallbackManager.Companion.getInstance().getConnectCallback()
         if (mCallback != null && mCallback !is ConnectManager) { // 如果是外部 单独的连接回调 才进行断开回调(自己回调自己 死循环)
             mCallback.onDisconnected()
@@ -140,7 +145,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
 
     private fun retryConnect(callbackType: Int, callback: GatewayCallback) {
         Log.d("OMG", "==retryConnect=$callback")
-        connect2Device(mCurrentMac, connectCallback)
+        connect2Device(mCurrentMac!!, connectCallback)
         GatewayCallbackManager.Companion.getInstance().isGatewayBusy(callbackType, callback)
         mCurrentMac = ""
     }

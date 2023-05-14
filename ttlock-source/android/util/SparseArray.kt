@@ -17,6 +17,10 @@ class SparseArray<T>(i: Int = 0) {
         return null
     }
 
+    fun get(operationType: Int, default: T): T {
+        return default
+    }
+
     fun clear() {
     }
 }

@@ -9,5 +9,5 @@ import com.ttlock.bl.sdk.gateway.model.GatewayError
  */
 interface ConfigIpCallback : GatewayCallback {
     fun onConfigIpSuccess()
-    override fun onFail(error: GatewayError?)
+    override fun onFail(error: GatewayError)
 }

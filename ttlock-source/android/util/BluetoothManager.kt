@@ -30,20 +30,23 @@ class BluetoothDevice {
     fun connectGatt(context: Context, f: Boolean, gattCallback: BluetoothGattCallback): BluetoothGatt = BluetoothGatt()
     fun getName(): String = ""
     fun getAddress(): String = ""
+    fun getType(): Int = 0
 }
 
 class BluetoothGatt {
-    fun discoverServices() {
+    fun discoverServices(): Boolean {
+        return false
     }
     fun disconnect() {}
 
     fun close() = Unit
-    fun getService(uuid: UUID): BluetoothGattService = error("Not implemented")
+    fun getService(uuid: UUID): BluetoothGattService? = null
     fun getServices(): List<BluetoothGattService> = emptyList()
     fun setCharacteristicNotification(
         characteristic: BluetoothGattCharacteristic,
         notify: Boolean
-    ) {
+    ): Boolean {
+        return false
     }
 
     fun writeDescriptor(descriptor: BluetoothGattDescriptor): Boolean = false
@@ -52,14 +55,23 @@ class BluetoothGatt {
 
     }
 
+    fun requestConnectionPriority(connectionPriority: Int): Boolean {
+        return false
+    }
+
     companion object {
+        const val STATE_CONNECTED = BluetoothProfile.STATE_CONNECTED
         const val GATT_SUCCESS = 0
     }
 }
 
 class BluetoothGattService {
     fun getUuid(): UUID = UUID.randomUUID()
-    fun getCharacteristics(): List<BluetoothGattCharacteristic> = emptyList()
+    fun getCharacteristics(): List<BluetoothGattCharacteristic>? = emptyList()
+    fun getCharacteristic(characteristicUUID: UUID): BluetoothGattCharacteristic? {
+        return null
+
+    }
 }
 
 class BluetoothProfile {
@@ -76,6 +88,9 @@ class BluetoothGattDescriptor {
 
     fun getUuid(): UUID = UUID.randomUUID()
     fun getCharacteristic(): BluetoothGattCharacteristic = error("")
+    fun getValue(): ByteArray {
+        return byteArrayOf()
+    }
 
     companion object {
         val ENABLE_NOTIFICATION_VALUE = byteArrayOf(1, 2, 3)
@@ -108,6 +123,16 @@ abstract class BluetoothGattCallback {
         characteristic: BluetoothGattCharacteristic,
         status: Int
     ) = Unit
+
+    open fun onDescriptorRead(
+        gatt: BluetoothGatt,
+        descriptor: BluetoothGattDescriptor,
+        status: Int
+    ) = Unit
+
+    open fun onReadRemoteRssi(gatt: BluetoothGatt, rssi: Int, status: Int) = Unit
+    open fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) = Unit
+    open fun onReliableWriteCompleted(gatt: BluetoothGatt, status: Int) = Unit
 }
 
 class BluetoothGattCharacteristic {
@@ -115,6 +140,33 @@ class BluetoothGattCharacteristic {
     fun getValue(): ByteArray = byteArrayOf()
     fun getDescriptor(uuid: UUID): BluetoothGattDescriptor = error("")
     fun setValue(value: ByteArray) {}
+    fun getService(): BluetoothGattService {
+        return BluetoothGattService()
+    }
+
+    fun getDescriptors(): List<BluetoothGattDescriptor> {
+        return emptyList()
+    }
+
+    fun setWriteType(writeType: Int) {
+
+    }
+
+    fun getProperties(): Int {
+        return 0
+    }
+
+    fun getInstanceId(): Int {
+        return 0
+    }
+
+    companion object {
+        const val PROPERTY_INDICATE: Int = 4
+        const val PROPERTY_NOTIFY: Int = 3
+        const val PROPERTY_WRITE = 0
+        const val WRITE_TYPE_NO_RESPONSE = 1
+        const val PROPERTY_WRITE_NO_RESPONSE = 2
+    }
 }
 
 class ScanResult {

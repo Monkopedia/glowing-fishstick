@@ -1,9 +1,15 @@
 package com.ttlock.bl.sdk.telink.ble
 
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattService
+import android.util.Log
 import com.ttlock.bl.sdk.telink.ble.Command.Callback
+import com.ttlock.bl.sdk.telink.ble.Command.CommandType
 import com.ttlock.bl.sdk.telink.ble.OtaError.OTA_SUCCESS
 import com.ttlock.bl.sdk.telink.util.Arrays
+import com.ttlock.bl.sdk.telink.util.TelinkLog
+import java.util.UUID
 
 class Device(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int) :
     Peripheral(device, scanRecord, rssi) {
@@ -120,7 +126,7 @@ class Device(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int) :
     }
 
     fun getOtaProgress(): Int {
-        return mOtaParser!!.progress
+        return mOtaParser!!.getProgress()
     }
 
     private fun resetOta() {
@@ -188,8 +194,8 @@ class Device(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int) :
             cmd.serviceUUID = SERVICE_UUID
             cmd.characteristicUUID = CHARACTERISTIC_UUID_WRITE
             cmd.type = CommandType.WRITE_NO_RESPONSE
-            cmd.data = mOtaParser.nextPacket
-            if (mOtaParser.isLast) {
+            cmd.data = mOtaParser.getNextPacket()
+            if (mOtaParser.isLast()) {
                 cmd.tag = TAG_OTA_LAST
                 result = true
             } else {
@@ -229,10 +235,10 @@ class Device(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int) :
          * 发送read指令
          */
         val sectionSize = 16 * 8
-        val sendTotal = mOtaParser!!.nextPacketIndex * 16
+        val sendTotal = mOtaParser!!.getNextPacketIndex() * 16
         TelinkLog.i("ota onCommandSampled byte length : $sendTotal")
         if (sendTotal > 0 && sendTotal % sectionSize == 0) {
-            TelinkLog.i("onCommandSampled ota read packet " + mOtaParser.nextPacketIndex)
+            TelinkLog.i("onCommandSampled ota read packet " + mOtaParser.getNextPacketIndex())
             val cmd: Command = Command.Companion.newInstance()
             cmd.serviceUUID = SERVICE_UUID
             cmd.characteristicUUID = CHARACTERISTIC_UUID_WRITE
@@ -308,9 +314,9 @@ class Device(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int) :
     }
 
     interface DeviceStateCallback {
-        fun onConnected(device: Device?)
-        fun onDisconnected(device: Device?)
-        fun onServicesDiscovered(device: Device, services: List<BluetoothGattService?>)
+        fun onConnected(device: Device)
+        fun onDisconnected(device: Device)
+        fun onServicesDiscovered(device: Device, services: List<BluetoothGattService>)
         fun onOtaStateChanged(device: Device, state: Int)
     }
 
@@ -442,7 +448,7 @@ class Device(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int) :
     }
 
     fun getTotal(): Int {
-        return mOtaParser?.total ?: 0
+        return mOtaParser?.getTotal() ?: 0
     }
 
     companion object {

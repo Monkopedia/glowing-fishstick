@@ -17,7 +17,7 @@ class Command {
     var checksum: Byte = // 校验		1 字节
         0
     private var mIsChecksumValid = false
-    private var mac: String? = null
+    var mac: String? = null
 
     /**
      * 锁类型
@@ -62,39 +62,43 @@ class Command {
 //        LogUtil.d("mIsChecksumValid : " + mIsChecksumValid, DBG);
     }
 
+    @JvmName("setCommand1")
     fun setCommand(command: Byte) {
         this.command = command
     }
 
+    @JvmName("getCommand1")
     fun getCommand(): Byte {
         return command
     }
 
-    fun getData(): ByteArray {
+    @JvmName("getData1")
+    fun getData(): ByteArray? {
         return getData(getAeskey())
     }
 
-    fun getAeskey(): ByteArray {
+    fun getAeskey(): ByteArray? {
         var macArr: Array<String?>? = mac!!.split(":").toTypedArray()
         macArr = reverseArray(macArr)
         val macBytes = hexStringArrToByteArr(macArr)
         return AESUtil.aesEncrypt(macBytes, Command.Companion.defaultAeskey)
     }
 
-    fun getData(aesKeyArray: ByteArray?): ByteArray {
-        val values: ByteArray
-        values = AESUtil.aesDecrypt(data, aesKeyArray)
-        return values
+    fun getData(aesKeyArray: ByteArray?): ByteArray? {
+        return AESUtil.aesDecrypt(data, aesKeyArray)
     }
 
+    @JvmName("setData1")
     fun setData(data: ByteArray?) {
         setData(data, getAeskey())
     }
 
+    @JvmName("getMac1")
     fun getMac(): String? {
         return mac
     }
 
+    @JvmName("setMac1")
     fun setMac(mac: String?) {
         this.mac = mac
     }

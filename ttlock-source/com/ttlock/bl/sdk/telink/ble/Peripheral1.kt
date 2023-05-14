@@ -5,11 +5,24 @@
 package com.ttlock.bl.sdk.telink.ble
 
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCallback
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
+import android.bluetooth.BluetoothGattService
+import android.util.Context
+import android.util.Handler
+import android.util.Log
+import android.util.Looper
 import com.ttlock.bl.sdk.telink.ble.Command.Callback
+import com.ttlock.bl.sdk.telink.ble.Command.CommandType
 import com.ttlock.bl.sdk.telink.util.Arrays
+import com.ttlock.bl.sdk.telink.util.TelinkLog
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
 
-open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int) :
+open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int) :
     BluetoothGattCallback() {
     protected val mInputCommandQueue: Queue<CommandContext> =
         ConcurrentLinkedQueue<CommandContext>()
@@ -28,12 +41,12 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
     protected var device: BluetoothDevice
     var gatt: BluetoothGatt? = null
     protected var rssi: Int
-    protected var scanRecord: ByteArray
+    protected var scanRecord: ByteArray?
     protected var name: String
     protected var mac: String
     protected var macBytes: ByteArray?
     protected var type: Int
-    protected var mServices: List<BluetoothGattService?>? = null
+    protected var mServices: List<BluetoothGattService>? = null
     protected var processing = false
     protected var monitorRssi = false
     protected var updateIntervalMill = 5 * 1000
@@ -52,6 +65,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
     /********************************************************************************
      * Public API
      */
+    @JvmName("getDevice1")
     fun getDevice(): BluetoothDevice {
         return device
     }
@@ -68,6 +82,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
         return mServices
     }
 
+    @JvmName("getMacBytes1")
     fun getMacBytes(): ByteArray? {
         if (macBytes == null) {
             val strArray = getMacAddress().split(":").toTypedArray()
@@ -81,10 +96,12 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
         return macBytes
     }
 
+    @JvmName("getType1")
     fun getType(): Int {
         return type
     }
 
+    @JvmName("getRssi1")
     fun getRssi(): Int {
         return rssi
     }
@@ -93,7 +110,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
         synchronized(mStateLock) { return mConnState == CONN_STATE_CONNECTED }
     }
 
-    fun connect(context: Context?) {
+    fun connect(context: Context) {
         synchronized(mStateLock) {
             if (mConnState == CONN_STATE_IDLE) {
                 TelinkLog.d(
@@ -124,11 +141,11 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
             if (gatt != null) {
                 val connState = mConnState
                 if (connState == CONN_STATE_CONNECTED) {
-                    gatt.disconnect()
+                    gatt!!.disconnect()
                     mConnState = CONN_STATE_DISCONNECTING
                 } else {
-                    gatt.disconnect()
-                    gatt.close()
+                    gatt!!.disconnect()
+                    gatt!!.close()
                     mConnState = CONN_STATE_CLOSED
                 }
             } else {
@@ -167,9 +184,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
     }
 
     fun requestConnectionPriority(connectionPriority: Int): Boolean {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && gatt.requestConnectionPriority(
-            connectionPriority
-        )
+        return gatt.requestConnectionPriority( connectionPriority )
     }
 
     /********************************************************************************
@@ -184,7 +199,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
         enableMonitorRssi(false)
     }
 
-    protected open fun onServicesDiscovered(services: List<BluetoothGattService?>) {
+    protected open fun onServicesDiscovered(services: List<BluetoothGattService>) {
         for (service in services) { // TODO:test
             Log.e("tag", "service:" + service.getUuid())
         }
@@ -412,12 +427,12 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
     ) {
         var success = true
         var errorMsg = ""
-        val service: BluetoothGattService = gatt.getService(serviceUUID)
+        val service: BluetoothGattService? = gatt!!.getService(serviceUUID)
         if (service != null) {
-            val characteristic: BluetoothGattCharacteristic = service
+            val characteristic: BluetoothGattCharacteristic? = service
                 .getCharacteristic(characteristicUUID)
             if (characteristic != null) {
-                if (!gatt.readCharacteristic(characteristic)) {
+                if (!gatt!!.readCharacteristic(characteristic)) {
                     success = false
                     errorMsg = "read characteristic error"
                 }
@@ -444,7 +459,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
     ) {
         var success = true
         var errorMsg = ""
-        val service: BluetoothGattService = gatt.getService(serviceUUID)
+        val service: BluetoothGattService? = gatt!!.getService(serviceUUID)
         if (service != null) {
             val characteristic: BluetoothGattCharacteristic? = findWritableCharacteristic(
                 service, characteristicUUID,
@@ -453,7 +468,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
             if (characteristic != null) {
                 characteristic.setValue(data)
                 characteristic.setWriteType(writeType)
-                if (!gatt.writeCharacteristic(characteristic)) {
+                if (!gatt!!.writeCharacteristic(characteristic)) {
                     success = false
                     errorMsg = "write characteristic error"
                 }
@@ -478,12 +493,12 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
     ) {
         var success = true
         var errorMsg = ""
-        val service: BluetoothGattService = gatt.getService(serviceUUID)
+        val service: BluetoothGattService? = gatt!!.getService(serviceUUID)
         if (service != null) {
             val characteristic: BluetoothGattCharacteristic? =
                 findNotifyCharacteristic(service, characteristicUUID)
             if (characteristic != null) {
-                if (!gatt.setCharacteristicNotification(
+                if (!gatt!!.setCharacteristicNotification(
                         characteristic,
                         true
                     )
@@ -521,14 +536,14 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
     ) {
         var success = true
         var errorMsg = ""
-        val service: BluetoothGattService = gatt.getService(serviceUUID)
+        val service: BluetoothGattService? = gatt!!.getService(serviceUUID)
         if (service != null) {
             val characteristic: BluetoothGattCharacteristic? =
                 findNotifyCharacteristic(service, characteristicUUID)
             if (characteristic != null) {
                 val key = this.generateHashKey(serviceUUID, characteristic)
                 mNotificationCallbacks.remove(key)
-                if (!gatt.setCharacteristicNotification(
+                if (!gatt!!.setCharacteristicNotification(
                         characteristic,
                         false
                     )
@@ -565,7 +580,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
         val characteristics: List<BluetoothGattCharacteristic> = service
             .getCharacteristics()
         for (c in characteristics) {
-            if (c.getProperties() and writeProperty !== 0 &&
+            if (c.getProperties() and writeProperty != 0 &&
                 characteristicUUID == c.getUuid()
             ) {
                 characteristic = c
@@ -583,7 +598,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
         val characteristics: List<BluetoothGattCharacteristic> = service
             .getCharacteristics()
         for (c in characteristics) {
-            if (c.getProperties() and BluetoothGattCharacteristic.PROPERTY_NOTIFY !== 0 &&
+            if (c.getProperties() and BluetoothGattCharacteristic.PROPERTY_NOTIFY != 0 &&
                 characteristicUUID == c.getUuid()
             ) {
                 characteristic = c
@@ -592,7 +607,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
         }
         if (characteristic != null) return characteristic
         for (c in characteristics) {
-            if (c.getProperties() and BluetoothGattCharacteristic.PROPERTY_INDICATE !== 0 &&
+            if (c.getProperties() and BluetoothGattCharacteristic.PROPERTY_INDICATE != 0 &&
                 characteristicUUID == c.getUuid()
             ) {
                 characteristic = c
@@ -622,8 +637,8 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
     /********************************************************************************
      * Implements BluetoothGattCallback API
      */
-    fun onConnectionStateChange(
-        gatt: BluetoothGatt?,
+    override fun onConnectionStateChange(
+        gatt: BluetoothGatt,
         status: Int,
         newState: Int
     ) {
@@ -633,7 +648,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
         )
         if (newState == BluetoothGatt.STATE_CONNECTED) {
             synchronized(mStateLock) { mConnState = CONN_STATE_CONNECTED }
-            if (this.gatt == null || !this.gatt.discoverServices()) {
+            if (this.gatt == null || !this.gatt!!.discoverServices()) {
                 TelinkLog.d(
                     "remote service discovery has been stopped status = " +
                         newState
@@ -647,7 +662,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
             synchronized(mStateLock) {
                 TelinkLog.d("Close")
                 if (this.gatt != null) {
-                    this.gatt.close()
+                    this.gatt!!.close()
                     mConnState = CONN_STATE_CLOSED
                 }
                 this.clear()
@@ -657,8 +672,8 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
         }
     }
 
-    fun onCharacteristicChanged(
-        gatt: BluetoothGatt?,
+    override fun onCharacteristicChanged(
+        gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic
     ) {
         super.onCharacteristicChanged(gatt, characteristic)
@@ -681,8 +696,8 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
         mNotificationCallbacks.clear()
     }
 
-    fun onCharacteristicRead(
-        gatt: BluetoothGatt?,
+    override fun onCharacteristicRead(
+        gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic,
         status: Int
     ) {
@@ -713,8 +728,8 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
         commandCompleted()
     }
 
-    fun onDescriptorRead(
-        gatt: BluetoothGatt?,
+    override fun onDescriptorRead(
+        gatt: BluetoothGatt,
         descriptor: BluetoothGattDescriptor,
         status: Int
     ) {
@@ -729,7 +744,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
         commandCompleted()
     }
 
-    fun onDescriptorWrite(
+    override fun onDescriptorWrite(
         gatt: BluetoothGatt,
         descriptor: BluetoothGattDescriptor,
         status: Int
@@ -746,11 +761,11 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
         commandCompleted()
     }
 
-    fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+    override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
         super.onServicesDiscovered(gatt, status)
         if (status == BluetoothGatt.GATT_SUCCESS) {
 //            setNotification(gatt);
-            val services: List<BluetoothGattService?> = gatt.getServices()
+            val services: List<BluetoothGattService> = gatt.getServices()
             mServices = services
             this.onServicesDiscovered(services)
             TelinkLog.d("Service discovery success:" + services.size)
@@ -787,7 +802,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
     //            Log.e("tag", "service is null");
     //        }
     //    }
-    fun onReadRemoteRssi(gatt: BluetoothGatt?, rssi: Int, status: Int) {
+    override fun onReadRemoteRssi(gatt: BluetoothGatt, rssi: Int, status: Int) {
         super.onReadRemoteRssi(gatt, rssi, status)
         if (status == BluetoothGatt.GATT_SUCCESS) {
             if (rssi != this.rssi) {
@@ -797,12 +812,12 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray, rssi: Int)
         }
     }
 
-    fun onMtuChanged(gatt: BluetoothGatt?, mtu: Int, status: Int) {
+    override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
         super.onMtuChanged(gatt, mtu, status)
         TelinkLog.d("mtu changed : $mtu")
     }
 
-    fun onReliableWriteCompleted(gatt: BluetoothGatt?, status: Int) {
+    override fun onReliableWriteCompleted(gatt: BluetoothGatt, status: Int) {
         super.onReliableWriteCompleted(gatt, status)
     }
 

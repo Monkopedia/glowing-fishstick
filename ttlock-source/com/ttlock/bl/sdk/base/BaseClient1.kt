@@ -24,7 +24,7 @@ open class BaseClient<T : BaseSDKApi?> {
         return mApi!!.isBLEEnabled(context)
     }
 
-    open fun prepareBTService(context: Context?) {
+    open fun prepareBTService(context: Context) {
         LogUtil.d("prepare service")
         mApi!!.prepareBTService(context)
     }

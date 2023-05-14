@@ -1,9 +1,21 @@
 package com.ttlock.bl.sdk.gateway.api
 
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
 import com.ttlock.bl.sdk.gateway.callback.ConfigIpCallback
 import android.util.Context
+import android.util.TextUtils
+import com.ttlock.bl.sdk.entity.IpSetting
+import com.ttlock.bl.sdk.gateway.callback.InitGatewayCallback
+import com.ttlock.bl.sdk.gateway.callback.ScanGatewayCallback
 import com.ttlock.bl.sdk.gateway.command.Command
 import com.ttlock.bl.sdk.gateway.command.CommandUtil
+import com.ttlock.bl.sdk.gateway.model.ConfigureGatewayInfo
+import com.ttlock.bl.sdk.gateway.model.GatewayError
+import com.ttlock.bl.sdk.gateway.model.GatewayType
+import com.ttlock.bl.sdk.gateway.util.GatewayUtil
+import com.ttlock.bl.sdk.util.LogUtil
+import java.io.UnsupportedEncodingException
 
 /**
  * Created by TTLock on 2019/4/24.
@@ -13,16 +25,8 @@ internal class GatewaySDKApi {
     fun isBLEEnabled(context: Context): Boolean {
         val manager: BluetoothManager =
             context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        val adapter: BluetoothAdapter = manager.getAdapter()
+        val adapter: BluetoothAdapter? = manager.getAdapter()
         return adapter != null && adapter.isEnabled()
-    }
-
-    fun requestBleEnable(activity: Activity) {
-        val mBluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-        if (mBluetoothAdapter != null && !mBluetoothAdapter.isEnabled()) {
-            val enableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-            activity.startActivityForResult(enableIntent, REQUEST_ENABLE_BT)
-        }
     }
 
     fun prepareBTService(context: Context?) {
@@ -38,7 +42,7 @@ internal class GatewaySDKApi {
     }
 
     fun initializeGateway(
-        @NonNull configureInfo: ConfigureGatewayInfo?,
+        configureInfo: ConfigureGatewayInfo,
         initGatewayCallback: InitGatewayCallback?
     ) {
         GattCallbackHelper.Companion.getInstance().setConfigureInfo(configureInfo)
@@ -93,35 +97,35 @@ internal class GatewaySDKApi {
             command.mac = mac
             val data = ByteArray(1 + 4 + 4 + 4 + 4 + 4) // 类型、ip、子网掩码、默认网关、首选dns服务器、备选dns服务器
             data[0] = ipSetting.getType().toByte()
-            var bytes: ByteArray = GatewayUtil.convertIp2Bytes(ipSetting.getIpAddress())
+            var bytes: ByteArray? = GatewayUtil.convertIp2Bytes(ipSetting.getIpAddress()!!)
             if (bytes == null) {
                 configIpCallback.onFail(GatewayError.DATA_FORMAT_ERROR)
                 return
             } else {
                 System.arraycopy(bytes, 0, data, 1, 4)
             }
-            bytes = GatewayUtil.convertIp2Bytes(ipSetting.getSubnetMask())
+            bytes = GatewayUtil.convertIp2Bytes(ipSetting.getSubnetMask()!!)
             if (bytes == null) {
                 configIpCallback.onFail(GatewayError.DATA_FORMAT_ERROR)
                 return
             } else {
                 System.arraycopy(bytes, 0, data, 5, 4)
             }
-            bytes = GatewayUtil.convertIp2Bytes(ipSetting.getRouter())
+            bytes = GatewayUtil.convertIp2Bytes(ipSetting.getRouter()!!)
             if (bytes == null) {
                 configIpCallback.onFail(GatewayError.DATA_FORMAT_ERROR)
                 return
             } else {
                 System.arraycopy(bytes, 0, data, 9, 4)
             }
-            bytes = GatewayUtil.convertIp2Bytes(ipSetting.getPreferredDns())
+            bytes = GatewayUtil.convertIp2Bytes(ipSetting.getPreferredDns()!!)
             if (bytes == null) {
                 configIpCallback.onFail(GatewayError.DATA_FORMAT_ERROR)
                 return
             } else {
                 System.arraycopy(bytes, 0, data, 13, 4)
             }
-            bytes = GatewayUtil.convertIp2Bytes(ipSetting.getAlternateDns())
+            bytes = GatewayUtil.convertIp2Bytes(ipSetting.getAlternateDns()!!)
             if (bytes == null) {
                 configIpCallback.onFail(GatewayError.DATA_FORMAT_ERROR)
                 return

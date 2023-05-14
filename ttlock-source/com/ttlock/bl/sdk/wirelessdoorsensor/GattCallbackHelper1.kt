@@ -1,10 +1,20 @@
 package com.ttlock.bl.sdk.wirelessdoorsensor
 
 import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCharacteristic
+import android.util.Log
+import com.ttlock.bl.sdk.base.BaseGattCallbackHelper
+import com.ttlock.bl.sdk.device.WirelessDoorSensor
+import com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.LogUtil
 import com.ttlock.bl.sdk.wirelessdoorsensor.callback.ConnectCallback
+import com.ttlock.bl.sdk.wirelessdoorsensor.callback.DoorSensorCallback
 import com.ttlock.bl.sdk.wirelessdoorsensor.callback.EnterDfuCallback
+import com.ttlock.bl.sdk.wirelessdoorsensor.callback.InitDoorSensorCallback
 import com.ttlock.bl.sdk.wirelessdoorsensor.command.Command
 import com.ttlock.bl.sdk.wirelessdoorsensor.command.CommandUtil
+import com.ttlock.bl.sdk.wirelessdoorsensor.model.DoorSensorError
+import com.ttlock.bl.sdk.wirelessdoorsensor.model.InitDoorSensorResult
 import java.util.*
 
 /**
@@ -14,15 +24,13 @@ class GattCallbackHelper : BaseGattCallbackHelper<WirelessDoorSensor?>() {
     // TODO:
     private var isInitSuccess = false
     protected override fun noResponseCallback() {
-        val callback: DoorSensorCallback =
-            DoorSensorCallbackManager.Companion.getInstance().getCallback()
-        if (callback != null) callback.onFail(DoorSensorError.NO_RESPONSE)
+        DoorSensorCallbackManager.getInstance().getCallback()?.onFail(DoorSensorError.NO_RESPONSE)
     }
 
     protected override fun disconnectedCallback() {
         mAppExecutor.mainThread().execute(
             Runnable {
-                val mConnectCallback: ConnectCallback =
+                val mConnectCallback: ConnectCallback? =
                     DoorSensorCallbackManager.Companion.getInstance().getConnectCallback()
                 if (mConnectCallback != null) {
                     Log.d("OMG", "====disconnect==1==$isInitSuccess")
@@ -45,7 +53,7 @@ class GattCallbackHelper : BaseGattCallbackHelper<WirelessDoorSensor?>() {
     protected override fun connectCallback() {
         mAppExecutor.mainThread().execute(
             Runnable {
-                val mConnectCallback: ConnectCallback =
+                val mConnectCallback: ConnectCallback? =
                     DoorSensorCallbackManager.Companion.getInstance().getConnectCallback()
                 if (mConnectCallback != null) {
                     Log.d("OMG", "====connect success==1==")
@@ -55,11 +63,11 @@ class GattCallbackHelper : BaseGattCallbackHelper<WirelessDoorSensor?>() {
         )
     }
 
-    override fun doWithData(values: ByteArray?) {
+    override fun doWithData(values: ByteArray) {
         mAppExecutor.mainThread().execute(
             Runnable {
                 val command = Command(values)
-                command.mac = device.getAddress()
+                command.mac = device!!.getAddress()
                 val data = command.getData()
                 LogUtil.d("command:" + DigitUtil.byteToHex(command.getCommand()))
                 LogUtil.d("data:" + DigitUtil.byteArrayToHexString(data))
@@ -73,7 +81,7 @@ class GattCallbackHelper : BaseGattCallbackHelper<WirelessDoorSensor?>() {
                             val initDoorSensorResult = InitDoorSensorResult()
                             initDoorSensorResult.setBatteryLevel(data[2].toInt())
                             initDoorSensorResult.setFirmwareInfo(firmwareInfo)
-                            val callback: DoorSensorCallback =
+                            val callback: DoorSensorCallback? =
                                 DoorSensorCallbackManager.Companion.getInstance().getCallback()
                             if (callback != null) {
                                 (callback as InitDoorSensorCallback).onInitSuccess(initDoorSensorResult)
@@ -85,14 +93,14 @@ class GattCallbackHelper : BaseGattCallbackHelper<WirelessDoorSensor?>() {
                             val responseRandom: Long =
                                 DigitUtil.bytesToLong(Arrays.copyOfRange(data, 2, data.size))
                             CommandUtil.checkRandom(
-                                device,
-                                ConnectManager.Companion.getInstance().getConnectParam(),
+                                device!!,
+                                ConnectManager.Companion.getInstance().getConnectParam()!!,
                                 responseRandom
                             )
                         }
-                        Command.Companion.COMM_CHECK_RANDOM -> CommandUtil.enterDfu(device)
+                        Command.Companion.COMM_CHECK_RANDOM -> CommandUtil.enterDfu(device!!)
                         Command.Companion.COMM_ENTER_DFU -> {
-                            callback = DoorSensorCallbackManager.Companion.getInstance().getCallback()
+                            val callback = DoorSensorCallbackManager.Companion.getInstance().getCallback()
                             if (callback != null) {
                                 (callback as EnterDfuCallback).onEnterDfuSuccess()
                             }

@@ -9,5 +9,5 @@ import com.ttlock.bl.sdk.gateway.model.GatewayError
  */
 interface EnterDfuCallback : GatewayCallback {
     fun onEnterDfuSuccess()
-    override fun onFail(error: GatewayError?)
+    override fun onFail(error: GatewayError)
 }

@@ -1,11 +1,31 @@
 package com.ttlock.bl.sdk.remote.api
 
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCallback
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
+import android.bluetooth.BluetoothGattService
+import android.bluetooth.BluetoothProfile
+import android.util.Context
+import android.util.Handler
+import android.util.Log
+import android.util.Looper
+import android.util.TextUtils
 import com.ttlock.bl.sdk.device.Remote
+import com.ttlock.bl.sdk.executor.AppExecutors
 import com.ttlock.bl.sdk.remote.callback.ConnectCallback
+import com.ttlock.bl.sdk.remote.callback.GetRemoteSystemInfoCallback
+import com.ttlock.bl.sdk.remote.callback.InitRemoteCallback
+import com.ttlock.bl.sdk.remote.callback.RemoteCallback
 import com.ttlock.bl.sdk.remote.command.Command
+import com.ttlock.bl.sdk.remote.model.InitRemoteResult
 import com.ttlock.bl.sdk.remote.model.OperationType
-import java.lang.Exception
+import com.ttlock.bl.sdk.remote.model.RemoteError
+import com.ttlock.bl.sdk.remote.model.SystemInfo
+import com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.LogUtil
 import java.util.*
 
 /**
@@ -36,14 +56,14 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
     private var dataQueue: LinkedList<ByteArray>? = null
     private var context: Context? = null
     private val mAppExecutor: AppExecutors
-    private val handler: android.os.Handler
+    private val handler: Handler
     private var deviceInfo: SystemInfo? = null
 
     // TODO:
     private var isInitSuccess = false
     private var mAddress: String? = null
     private val noResponseRunable = Runnable {
-        val callback: RemoteCallback = RemoteCallbackManager.Companion.getInstance().getCallback()
+        val callback: RemoteCallback? = RemoteCallbackManager.Companion.getInstance().getCallback()
         if (callback != null) callback.onFail(RemoteError.NO_RESPONSE)
         disconnect()
     }
@@ -65,11 +85,11 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
     //    }
     fun connect(extendedBluetoothDevice: Remote?) {
         device = extendedBluetoothDevice
-        mAddress = device!!.address
-        val bleDevice: BluetoothDevice = mBluetoothAdapter.getRemoteDevice(mAddress)
+        mAddress = device!!.getAddress()
+        val bleDevice: BluetoothDevice = mBluetoothAdapter!!.getRemoteDevice(mAddress!!)
         clear()
         mConnectionState = STATE_CONNECTING
-        mBluetoothGatt = bleDevice.connectGatt(context, false, this)
+        mBluetoothGatt = bleDevice.connectGatt(context!!, false, this)
     }
 
     fun getDevice(): Remote? {
@@ -92,13 +112,13 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         var len = command.size
         LogUtil.d("send datas:" + DigitUtil.byteArrayToHexString(command), DBG)
         if (dataQueue == null) dataQueue = LinkedList<ByteArray>()
-        dataQueue.clear()
+        dataQueue!!.clear()
         var startPos = 0
         while (len > 0) {
             val ln = Math.min(len, 20)
             val data = ByteArray(ln)
             System.arraycopy(command, startPos, data, 0, ln)
-            dataQueue.add(data)
+            dataQueue!!.add(data)
             len -= 20
             startPos += 20
         }
@@ -106,8 +126,8 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
             try {
                 startResponseTimer()
                 hasRecDataLen = 0 // 发送前恢复接收数据的起始位置
-                mWriteCharacteristic.setValue(dataQueue.poll())
-                mBluetoothGatt.writeCharacteristic(mWriteCharacteristic)
+                mWriteCharacteristic!!.setValue(dataQueue!!.poll())
+                mBluetoothGatt!!.writeCharacteristic(mWriteCharacteristic!!)
             } catch (e: Exception) {
                 // TODO:
             }
@@ -118,7 +138,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         }
     }
 
-    fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+    override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
         super.onConnectionStateChange(gatt, status, newState)
         if (mBluetoothGatt !== gatt) return
         try {
@@ -134,7 +154,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
             mConnectionState = STATE_DISCONNECTED
             mAppExecutor.mainThread().execute(
                 Runnable {
-                    val mConnectCallback: ConnectCallback =
+                    val mConnectCallback: ConnectCallback? =
                         RemoteCallbackManager.Companion.getInstance().getConnectCallback()
                     if (mConnectCallback != null) {
                         Log.d("OMG", "====disconnect==1==$isInitSuccess")
@@ -147,24 +167,20 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         }
     }
 
-    fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+    override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
         super.onServicesDiscovered(gatt, status)
         LogUtil.d("")
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            val service: BluetoothGattService = mBluetoothGatt.getService(
-                UUID.fromString(
-                    DEVICE_INFORMATION_SERVICE
-                )
-            )
+            val service: BluetoothGattService? =
+                mBluetoothGatt!!.getService(UUID.fromString(DEVICE_INFORMATION_SERVICE))
             if (service != null) {
-                val gattCharacteristics: List<BluetoothGattCharacteristic> =
+                val gattCharacteristics: List<BluetoothGattCharacteristic>? =
                     service.getCharacteristics()
-                if (gattCharacteristics != null && gattCharacteristics.size > 0) {
+                if (gattCharacteristics != null && gattCharacteristics.isNotEmpty()) {
                     for (gattCharacteristic in gattCharacteristics) {
                         LogUtil.d(gattCharacteristic.getUuid().toString(), DBG)
                         LogUtil.d("read characteristic:" + Thread.currentThread(), DBG)
-                        if (gattCharacteristic.getUuid().toString()
-                            .equals(READ_MODEL_NUMBER_UUID)
+                        if (gattCharacteristic.getUuid().toString() == READ_MODEL_NUMBER_UUID
                         ) {
                             modelNumberCharacteristic = gattCharacteristic
                             //                                gatt.readCharacteristic(gattCharacteristic);
@@ -182,7 +198,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
                     }
                 }
             }
-            gatt.readCharacteristic(modelNumberCharacteristic)
+            gatt.readCharacteristic(modelNumberCharacteristic!!)
 
 //            List<BluetoothGattService> services = gatt.getServices();
 //            for (BluetoothGattService service : services) {
@@ -219,7 +235,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         }
     }
 
-    fun onCharacteristicRead(
+    override fun onCharacteristicRead(
         gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic,
         status: Int
@@ -229,18 +245,18 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         if (status == BluetoothGatt.GATT_SUCCESS) {
             if (characteristic === modelNumberCharacteristic) {
                 if (deviceInfo == null) deviceInfo = SystemInfo()
-                deviceInfo.modelNum = String(characteristic.getValue())
-                gatt.readCharacteristic(hardwareRevisionCharacteristic)
+                deviceInfo!!.modelNum = String(characteristic.getValue())
+                gatt.readCharacteristic(hardwareRevisionCharacteristic!!)
             } else if (characteristic === hardwareRevisionCharacteristic) {
-                deviceInfo.hardwareRevision = String(characteristic.getValue())
-                gatt.readCharacteristic(firmwareRevisionCharacteristic)
+                deviceInfo!!.hardwareRevision = String(characteristic.getValue())
+                gatt.readCharacteristic(firmwareRevisionCharacteristic!!)
             } else if (characteristic === firmwareRevisionCharacteristic) {
-                deviceInfo.firmwareRevision = String(characteristic.getValue())
+                deviceInfo!!.firmwareRevision = String(characteristic.getValue())
                 LogUtil.d("deviceInfo:$deviceInfo")
                 val callbackType: Int =
                     RemoteCallbackManager.Companion.getInstance().getOperationType()
                 if (callbackType == OperationType.GET_DEVICE_INFO) { // 获取设备信息成功后 断开蓝牙
-                    val callback: RemoteCallback =
+                    val callback: RemoteCallback? =
                         RemoteCallbackManager.Companion.getInstance().getCallback()
                     if (callback != null) {
                         (callback as GetRemoteSystemInfoCallback).onGetRemoteSystemInfoSuccess(
@@ -252,9 +268,9 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
                 }
                 service = gatt.getService(UUID.fromString(UUID_SERVICE))
                 if (service != null) {
-                    val gattCharacteristics: List<BluetoothGattCharacteristic> =
-                        service.getCharacteristics()
-                    if (gattCharacteristics != null && gattCharacteristics.size > 0) {
+                    val gattCharacteristics: List<BluetoothGattCharacteristic>? =
+                        service!!.getCharacteristics()
+                    if (gattCharacteristics != null && gattCharacteristics.isNotEmpty()) {
                         for (gattCharacteristic in gattCharacteristics) {
                             LogUtil.d(gattCharacteristic.getUuid().toString(), DBG)
                             if (gattCharacteristic.getUuid().toString().equals(UUID_WRITE)) {
@@ -285,7 +301,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         }
     }
 
-    fun onCharacteristicWrite(
+    override fun onCharacteristicWrite(
         gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic,
         status: Int
@@ -296,8 +312,8 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         }
         LogUtil.d("gatt=$gatt characteristic=$characteristic status=$status", DBG)
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            if (dataQueue.size > 0) {
-                characteristic.setValue(dataQueue.poll())
+            if (dataQueue!!.size > 0) {
+                characteristic.setValue(dataQueue!!.poll())
                 // TODO:写成功再写下一个
                 gatt.writeCharacteristic(characteristic)
             } else {
@@ -308,7 +324,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         super.onCharacteristicWrite(gatt, characteristic, status)
     }
 
-    fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+    override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
         super.onCharacteristicChanged(gatt, characteristic)
         LogUtil.d("")
         if (mBluetoothGatt !== gatt) return
@@ -337,7 +353,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
         }
     }
 
-    fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor?, status: Int) {
+    override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
         super.onDescriptorWrite(gatt, descriptor, status)
         if (mBluetoothGatt !== gatt) return
         LogUtil.d("")
@@ -345,7 +361,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
             mConnectionState = STATE_CONNECTED
             mAppExecutor.mainThread().execute(
                 Runnable {
-                    val mConnectCallback: ConnectCallback =
+                    val mConnectCallback: ConnectCallback? =
                         RemoteCallbackManager.Companion.getInstance().getConnectCallback()
                     if (mConnectCallback != null) {
                         Log.d("OMG", "====connect success==1==")
@@ -363,7 +379,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
             Runnable {
                 LogUtil.d("values:" + DigitUtil.byteArrayToHexString(values))
                 val command = Command(values)
-                command.mac = device!!.address
+                command.setMac( device!!.getAddress())
                 val data = command.getData()
                 LogUtil.d("command:" + DigitUtil.byteToHex(command.getCommand()))
                 LogUtil.d("data:" + DigitUtil.byteArrayToHexString(data))
@@ -377,7 +393,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
                             val initKeyFobResult = InitRemoteResult()
                             initKeyFobResult.setBatteryLevel(data[2].toInt())
                             initKeyFobResult.setSystemInfo(deviceInfo)
-                            val callback: RemoteCallback =
+                            val callback: RemoteCallback? =
                                 RemoteCallbackManager.Companion.getInstance().getCallback()
                             if (callback != null) {
                                 (callback as InitRemoteCallback).onInitSuccess(initKeyFobResult)
@@ -410,7 +426,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
 
     private fun close() {
         if (mBluetoothGatt != null) {
-            mBluetoothGatt.close()
+            mBluetoothGatt!!.close()
             mBluetoothGatt = null
         }
     }
@@ -418,7 +434,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
     private fun disconnect() {
         if (mBluetoothGatt != null) {
             mConnectionState = STATE_DISCONNECTED
-            mBluetoothGatt.disconnect()
+            mBluetoothGatt!!.disconnect()
         }
     }
 

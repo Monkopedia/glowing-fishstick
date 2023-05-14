@@ -1,5 +1,8 @@
 package com.ttlock.bl.sdk.device
 
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.ScanResult
+
 /**
  * Created by TTLock on 2019/5/16.
  */
@@ -15,16 +18,17 @@ class Remote : TTDevice {
         device = scanResult.getDevice()
         scanRecord = scanResult.getScanRecord().getBytes()
         rssi = scanResult.getRssi()
-        name = device.getName()
+        name = device!!.getName()
         number = name
-        mAddress = device.getAddress()
+        mAddress = device!!.getAddress()
         this.date = System.currentTimeMillis()
         initial()
     }
 
-    constructor(device: BluetoothDevice?) : super(device) {}
+    constructor(device: BluetoothDevice) : super(device) {}
 
     override fun initial() {
+        val scanRecord = scanRecord!!
         val scanRecordLength = scanRecord.size
         var index = 0
         // TODO:越界
@@ -47,7 +51,7 @@ class Remote : TTDevice {
                     if (protocolType.toInt() == 0x05 && protocolVersion.toInt() == 0x03) { // 三代协议
                         scene = scanRecord[index + offset++]
                     }
-                    isSettingMode = if (scanRecord[index + offset] and 0x04 == 0) false else true
+                    isSettingMode = if (scanRecord[index + offset].toInt() and 0x04 == 0) false else true
 
                     // 电量偏移量
                     offset++
@@ -66,45 +70,5 @@ class Remote : TTDevice {
 
     override fun setDate(date: Long) {
         this.date = date
-    }
-
-    fun describeContents(): Int {
-        return 0
-    }
-
-    fun writeToParcel(dest: Parcel, flags: Int) {
-        dest.writeByte(scene)
-        dest.writeLong(this.date)
-        dest.writeParcelable(device, flags)
-        dest.writeByteArray(scanRecord)
-        dest.writeString(name)
-        dest.writeString(mAddress)
-        dest.writeInt(rssi)
-        dest.writeInt(batteryCapacity)
-        dest.writeByte(if (isSettingMode) 1.toByte() else 0.toByte())
-    }
-
-    constructor(`in`: Parcel) {
-        scene = `in`.readByte()
-        this.date = `in`.readLong()
-        device = `in`.readParcelable(BluetoothDevice::class.java.getClassLoader())
-        scanRecord = `in`.createByteArray()
-        name = `in`.readString()
-        mAddress = `in`.readString()
-        rssi = `in`.readInt()
-        batteryCapacity = `in`.readInt()
-        isSettingMode = `in`.readByte() !== 0
-    }
-
-    companion object {
-        val CREATOR: Creator<Remote> = object : Creator<Remote?>() {
-            fun createFromParcel(source: Parcel?): Remote {
-                return Remote(source)
-            }
-
-            fun newArray(size: Int): Array<Remote> {
-                return arrayOfNulls(size)
-            }
-        }
     }
 }

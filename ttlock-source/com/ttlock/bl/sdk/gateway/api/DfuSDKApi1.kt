@@ -1,15 +1,43 @@
 package com.ttlock.bl.sdk.gateway.api
 
+import android.bluetooth.BluetoothGattService
+import android.util.Context
+import android.util.DfuProgressListener
+import android.util.DfuProgressListenerAdapter
+import android.util.DfuServiceInitiator
+import android.util.DfuServiceListenerHelper
+import android.util.Handler
+import android.util.Looper
+import android.util.TextUtils
+import com.ttlock.bl.sdk.api.ExtendedBluetoothDevice
 import com.ttlock.bl.sdk.gateway.callback.DfuCallback
 import com.ttlock.bl.sdk.gateway.callback.EnterDfuCallback
+import com.ttlock.bl.sdk.gateway.callback.ScanGatewayCallback
+import com.ttlock.bl.sdk.gateway.model.GatewayError
+import com.ttlock.bl.sdk.gateway.model.GatewayUpdateInfo
+import com.ttlock.bl.sdk.net.ResponseService
+import com.ttlock.bl.sdk.service.DfuService
 import com.ttlock.bl.sdk.service.ThreadPool
+import com.ttlock.bl.sdk.telink.ble.Device
+import com.ttlock.bl.sdk.telink.ble.Device.DeviceStateCallback
+import com.ttlock.bl.sdk.telink.util.TelinkLog
+import com.ttlock.bl.sdk.util.AESUtil
+import com.ttlock.bl.sdk.util.DigitUtil
+import com.ttlock.bl.sdk.util.GsonUtil
 import com.ttlock.bl.sdk.util.IOUtil
+import com.ttlock.bl.sdk.util.LogUtil
+import com.ttlock.bl.sdk.util.NetworkUtil
+import com.ttlock.file.FileProviderPath
+import json.JSONException
+import json.JSONObject
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
-import java.lang.Exception
 import java.net.URL
-import android.util.Context
+import java.util.UUID
 
 /**
  * Created by TTLock on 2017/8/16.
@@ -52,7 +80,7 @@ internal class DfuSDKApi {
                 }
                 if (device.isTelinkGatewayDfuMode()) {
                     telinkDevice =
-                        Device(device.getDevice(), device.getScanRecord(), device.getRssi())
+                        Device(device.getDevice()!!, device.getScanRecord()!!, device.getRssi())
                     isTelinkDFUMode = true
                 }
                 if (isDFUMode || isTelinkDFUMode) {
@@ -65,7 +93,7 @@ internal class DfuSDKApi {
                     isTelinkDFUMode = false
                     enterDfuByBle()
                 }
-                handler.removeCallbacks(scanTimeOutRunable)
+                handler!!.removeCallbacks(scanTimeOutRunable)
             }
         }
 
@@ -78,20 +106,20 @@ internal class DfuSDKApi {
      * nordic芯片 固件烧录状态回调
      */
     private val mDfuProgressListener: DfuProgressListener = object : DfuProgressListenerAdapter() {
-        fun onDeviceConnecting(deviceAddress: String?) {}
-        fun onDfuProcessStarting(deviceAddress: String?) {}
-        fun onEnablingDfuMode(deviceAddress: String?) {}
-        fun onFirmwareValidating(deviceAddress: String?) {}
-        fun onDeviceDisconnecting(deviceAddress: String?) {}
-        fun onDfuCompleted(deviceAddress: String) {
+        override fun onDeviceConnecting(deviceAddress: String) {}
+        override fun onDfuProcessStarting(deviceAddress: String) {}
+        override fun onEnablingDfuMode(deviceAddress: String) {}
+        override fun onFirmwareValidating(deviceAddress: String) {}
+        override fun onDeviceDisconnecting(deviceAddress: String) {}
+        override fun onDfuCompleted(deviceAddress: String) {
             dfuComplete(deviceAddress)
         }
 
-        fun onDfuAborted(deviceAddress: String?) {
-            handler.post(Runnable { dfuCallback!!.onDfuAborted(deviceAddress) })
+        override fun onDfuAborted(deviceAddress: String) {
+            handler!!.post(Runnable { dfuCallback!!.onDfuAborted(deviceAddress) })
         }
 
-        fun onProgressChanged(
+        override fun onProgressChanged(
             deviceAddress: String,
             percent: Int,
             speed: Float,
@@ -109,7 +137,7 @@ internal class DfuSDKApi {
             )
         }
 
-        fun onError(deviceAddress: String?, error: Int, errorType: Int, message: String) {
+        override fun onError(deviceAddress: String, error: Int, errorType: Int, message: String) {
             LogUtil.d("message:$message")
             errorCallback()
         }
@@ -145,13 +173,13 @@ internal class DfuSDKApi {
     }
 
     private fun successCallback(deviceAddress: String?) {
-        handler.post(Runnable { dfuCallback!!.onDfuSuccess(deviceAddress) })
+        handler!!.post(Runnable { dfuCallback!!.onDfuSuccess(deviceAddress) })
     }
 
     private fun errorCallback() {
         clearData()
         telinkDfuDisconnectFailureCallback = false
-        handler.post(Runnable { dfuCallback!!.onError() })
+        handler!!.post(Runnable { dfuCallback!!.onError() })
     }
 
     private fun clearData() {
@@ -161,7 +189,7 @@ internal class DfuSDKApi {
 
     private fun startScan() {
         try {
-            handler.postDelayed(scanTimeOutRunable, scanTimeOut)
+            handler!!.postDelayed(scanTimeOutRunable, scanTimeOut)
             GatewayClient.Companion.getDefault().startScanGateway(scanCallback)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -173,12 +201,12 @@ internal class DfuSDKApi {
      */
     fun abortUpgradeProcess() {
         LogUtil.d("exit dfu mode", DBG)
-        val manager: LocalBroadcastManager = LocalBroadcastManager.getInstance(mContext)
-        val pauseAction = Intent(BROADCAST_ACTION)
-        pauseAction.putExtra(EXTRA_ACTION, ACTION_ABORT)
-        manager.sendBroadcast(pauseAction)
+//        val manager: LocalBroadcastManager = LocalBroadcastManager.getInstance(mContext)
+//        val pauseAction = Intent(BROADCAST_ACTION)
+//        pauseAction.putExtra(EXTRA_ACTION, ACTION_ABORT)
+//        manager.sendBroadcast(pauseAction)
         if (telinkDevice != null) {
-            telinkDevice.disconnect()
+            telinkDevice!!.disconnect()
         }
     }
 
@@ -200,24 +228,23 @@ internal class DfuSDKApi {
     }
 
     private val deviceCallback: DeviceStateCallback = object : DeviceStateCallback {
-        override fun onConnected(device: Device?) {
+        override fun onConnected(device: Device) {
             TelinkLog.w("telink:" + " # onConnected")
         }
 
-        override fun onDisconnected(device: Device?) {
+        override fun onDisconnected(device: Device) {
             TelinkLog.w("telink:" + " # onDisconnected")
             if (telinkDfuDisconnectFailureCallback) {
                 errorCallback()
             }
         }
 
-        override fun onServicesDiscovered(device: Device, services: List<BluetoothGattService?>) {
+        override fun onServicesDiscovered(device: Device, services: List<BluetoothGattService>) {
             TelinkLog.w("telink:" + " # onServicesDiscovered")
             var serviceUUID: UUID? = null
             for (service in services) {
-                for (characteristic in service.getCharacteristics()) {
-                    if (characteristic.getUuid()
-                        .equals(Device.Companion.CHARACTERISTIC_UUID_WRITE)
+                for (characteristic in service.getCharacteristics() ?: emptyList()) {
+                    if (characteristic.getUuid() == Device.Companion.CHARACTERISTIC_UUID_WRITE
                     ) {
                         serviceUUID = service.getUuid()
                         break
@@ -233,7 +260,7 @@ internal class DfuSDKApi {
                 errorCallback()
                 return
             }
-            telinkDevice.startOta(firmware)
+            telinkDevice!!.startOta(firmware)
         }
 
         override fun onOtaStateChanged(device: Device, state: Int) {
@@ -273,7 +300,7 @@ internal class DfuSDKApi {
         currentPart: Int,
         partsTotal: Int
     ) {
-        handler.post(
+        handler!!.post(
             Runnable {
                 dfuCallback!!.onProgressChanged(
                     deviceAddress,
@@ -289,12 +316,12 @@ internal class DfuSDKApi {
 
     private fun telinkDfu() {
         LogUtil.d("telink dfu")
-        handler.postDelayed(
+        handler!!.postDelayed(
             Runnable {
                 if (telinkDevice != null) {
                     telinkDfuDisconnectFailureCallback = true
-                    telinkDevice.setDeviceStateCallback(deviceCallback)
-                    telinkDevice.connect(mContext)
+                    telinkDevice!!.setDeviceStateCallback(deviceCallback)
+                    telinkDevice!!.connect(mContext!!)
                 } else {
                     LogUtil.d("telinkDevice is null")
                 }
@@ -305,9 +332,9 @@ internal class DfuSDKApi {
 
     private fun nordicDfu() {
         LogUtil.d("nordic dfu")
-        handler.postDelayed(
+        handler!!.postDelayed(
             Runnable {
-                val starter: DfuServiceInitiator = DfuServiceInitiator(gatewayMac)
+                val starter: DfuServiceInitiator = DfuServiceInitiator(gatewayMac!!)
                     .setForeground(false)
                     .setDisableNotification(true)
                     .setUnsafeExperimentalButtonlessServiceInSecureDfuEnabled(true) //                        .setDeviceName(mDoorkey.getLockName())
@@ -358,7 +385,7 @@ internal class DfuSDKApi {
 
     private fun doEnterDfuByBle() {
         GatewayClient.Companion.getDefault().enterDfu(
-            gatewayMac,
+            gatewayMac!!,
             object : EnterDfuCallback {
                 override fun onEnterDfuSuccess() {
                     startScan()
@@ -472,13 +499,13 @@ internal class DfuSDKApi {
                 while (`is`.read(bs).also { len = it } != -1) {
                     os!!.write(bs, 0, len)
                 }
-                val source: ByteArray = (os as ByteArrayOutputStream?).toByteArray()
+                val source: ByteArray = os.toByteArray()
                 val decryptedBytes: ByteArray = AESUtil.aesDecrypt(
                     source,
-                    DigitUtil.decodeLockData(gatewayUpdateInfo.getDecryptionKey()).toByteArray()
-                )
+                    DigitUtil.decodeLockData(gatewayUpdateInfo.getDecryptionKey()!!).toByteArray()
+                )!!
                 mUpdateFilePath =
-                    mContext.getCacheDir().getAbsolutePath() + File.separator + UPDATE_FILE_NAME
+                    mContext!!.getCacheDir().absolutePath + File.separator + UPDATE_FILE_NAME
                 //                    LogUtil.d("mUpdateFilePath:" + mUpdateFilePath, DBG);
                 os = FileOutputStream(mUpdateFilePath)
                 if (decryptedBytes != null) os!!.write(decryptedBytes)

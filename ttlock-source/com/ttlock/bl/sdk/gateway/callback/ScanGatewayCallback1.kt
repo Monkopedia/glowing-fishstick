@@ -8,6 +8,6 @@ import com.ttlock.bl.sdk.api.ExtendedBluetoothDevice
  * @author theodre
  */
 interface ScanGatewayCallback {
-    fun onScanGatewaySuccess(device: ExtendedBluetoothDevice?)
+    fun onScanGatewaySuccess(device: ExtendedBluetoothDevice)
     fun onScanFailed(errorCode: Int)
 }

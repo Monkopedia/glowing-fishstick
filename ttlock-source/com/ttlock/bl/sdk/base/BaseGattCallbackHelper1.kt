@@ -11,12 +11,12 @@ import android.bluetooth.BluetoothProfile
 import android.util.Context
 import android.util.Handler
 import android.util.Looper
+import com.ttlock.bl.sdk.constant.BleConstant
 import com.ttlock.bl.sdk.device.TTDevice
 import com.ttlock.bl.sdk.entity.FirmwareInfo
 import com.ttlock.bl.sdk.executor.AppExecutors
 import com.ttlock.bl.sdk.util.DigitUtil
 import com.ttlock.bl.sdk.util.LogUtil
-import java.lang.Exception
 import java.util.*
 
 /**
@@ -30,7 +30,7 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
     private var mBluetoothAdapter: BluetoothAdapter? = null
     private var mBluetoothGatt: BluetoothGatt? = null
     private var mWriteCharacteristic: BluetoothGattCharacteristic? = null
-    protected var device: T? = null
+    var device: T? = null
     private var recDataTotalLen = 0
     private var hasRecDataLen = 0
     private val recDataBuf: ByteArray
@@ -85,8 +85,8 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
         LogUtil.d("mBluetoothAdapter:$mBluetoothAdapter")
         try {
             device = ttDevice
-            val address: String = device.getAddress()
-            val bleDevice: BluetoothDevice = mBluetoothAdapter.getRemoteDevice(address)
+            val address: String = device!!.getAddress()
+            val bleDevice: BluetoothDevice = mBluetoothAdapter!!.getRemoteDevice(address)
             clear()
             mBluetoothGatt = bleDevice.connectGatt(context!!, false, this)
         } catch (e: Exception) {
@@ -94,10 +94,12 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
         }
     }
 
+    @JvmName("getDevice1")
     fun getDevice(): TTDevice? {
         return device
     }
 
+    @JvmName("setDevice1")
     fun setDevice(device: T) {
         this.device = device
     }
@@ -307,8 +309,8 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
         }
         LogUtil.d("gatt=$gatt characteristic=$characteristic status=$status", DBG)
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            if (dataQueue.size > 0) {
-                characteristic.setValue(dataQueue.poll())
+            if (dataQueue!!.size > 0) {
+                characteristic.setValue(dataQueue!!.poll())
                 // TODO:写成功再写下一个
                 gatt.writeCharacteristic(characteristic)
             } else {
@@ -319,7 +321,10 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
         super.onCharacteristicWrite(gatt, characteristic, status)
     }
 
-    override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+    override fun onCharacteristicChanged(
+        gatt: BluetoothGatt,
+        characteristic: BluetoothGattCharacteristic
+    ) {
         super.onCharacteristicChanged(gatt, characteristic)
         LogUtil.d("")
         if (mBluetoothGatt !== gatt) return
@@ -348,7 +353,11 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
         }
     }
 
-    fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor?, status: Int) {
+    override fun onDescriptorWrite(
+        gatt: BluetoothGatt,
+        descriptor: BluetoothGattDescriptor,
+        status: Int
+    ) {
         super.onDescriptorWrite(gatt, descriptor, status)
         if (mBluetoothGatt !== gatt) return
         LogUtil.d("")
@@ -360,18 +369,14 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
     }
 
     protected open fun connectCallback() {}
-    protected open fun doWithData(values: ByteArray?) {}
+    protected open fun doWithData(values: ByteArray) {}
     private fun close() {
-        if (mBluetoothGatt != null) {
-            mBluetoothGatt.close()
-            mBluetoothGatt = null
-        }
+        mBluetoothGatt?.close()
+        mBluetoothGatt = null
     }
 
     protected fun disconnect() {
-        if (mBluetoothGatt != null) {
-            mBluetoothGatt.disconnect()
-        }
+        mBluetoothGatt?.disconnect()
     }
 
     fun clear() {
@@ -398,7 +403,7 @@ open class BaseGattCallbackHelper<T : TTDevice?> protected constructor() : Bluet
         private const val READ_FIRMWARE_REVISION_UUID = "00002a26-0000-1000-8000-00805f9b34fb"
         private const val READ_HARDWARE_REVISION_UUID = "00002a27-0000-1000-8000-00805f9b34fb"
         private const val READ_MANUFACTURER_NAME_UUID = "00002a29-0000-1000-8000-00805f9b34fb"
-        private val instance: BaseGattCallbackHelper<*> = BaseGattCallbackHelper<Any?>()
+        private val instance: BaseGattCallbackHelper<*> = BaseGattCallbackHelper<TTDevice?>()
         fun getInstance(): BaseGattCallbackHelper<*> {
             return instance
         }

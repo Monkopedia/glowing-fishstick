@@ -1,5 +1,7 @@
 package com.ttlock.bl.sdk.entity
 
+import java.util.TimeZone
+
 /**
  * Created by Administrator on 2016/8/12 0012.
  */
@@ -109,7 +111,7 @@ class TransferData {
     /**
      * 传送数据
      */
-    var transferData: ByteArray
+    var transferData: ByteArray = byteArrayOf()
 
     /**
      * IC卡卡号或指纹卡号
@@ -181,15 +183,17 @@ class TransferData {
         this.unlockDirection = unlockDirection
     }
 
+    @JvmName("getLockVersion1")
     fun getLockVersion(): String? {
         return lockVersion
     }
 
+    @JvmName("setLockVersion1")
     fun setLockVersion(lockVersion: String?) {
         this.lockVersion = lockVersion
     }
 
-    fun getAesKeyArray(): ByteArray {
+    fun getAesKeyArray(): ByteArray? {
         return aesKeyArray
     }
 
@@ -213,18 +217,22 @@ class TransferData {
         this.command = command
     }
 
+    @JvmName("getAdminPs1")
     fun getAdminPs(): String? {
         return adminPs
     }
 
+    @JvmName("setAdminPs1")
     fun setAdminPs(adminPs: String?) {
         this.adminPs = adminPs
     }
 
+    @JvmName("getUnlockKey1")
     fun getUnlockKey(): String? {
         return unlockKey
     }
 
+    @JvmName("setUnlockKey1")
     fun setUnlockKey(unlockKey: String?) {
         this.unlockKey = unlockKey
     }
@@ -237,91 +245,113 @@ class TransferData {
         this.mUid = mUid
     }
 
+    @JvmName("getPwdInfo1")
     fun getPwdInfo(): String? {
         return pwdInfo
     }
 
+    @JvmName("setPwdInfo1")
     fun setPwdInfo(pwdInfo: String?) {
         this.pwdInfo = pwdInfo
     }
 
+    @JvmName("getTimestamp1")
     fun getTimestamp(): Long {
         return timestamp
     }
 
+    @JvmName("setTimestamp1")
     fun setTimestamp(timestamp: Long) {
         this.timestamp = timestamp
     }
 
+    @JvmName("getKeyboardPwd1")
     fun getKeyboardPwd(): String? {
         return keyboardPwd
     }
 
+    @JvmName("setKeyboardPwd1")
     fun setKeyboardPwd(keyboardPwd: String?) {
         this.keyboardPwd = keyboardPwd
     }
 
+    @JvmName("getDeletePwd1")
     fun getDeletePwd(): String? {
         return deletePwd
     }
 
+    @JvmName("setDeletePwd1")
     fun setDeletePwd(deletePwd: String?) {
         this.deletePwd = deletePwd
     }
 
+    @JvmName("getLockFlagPos1")
     fun getLockFlagPos(): Int {
         return lockFlagPos
     }
 
+    @JvmName("setLockFlagPos1")
     fun setLockFlagPos(lockFlagPos: Int) {
         this.lockFlagPos = lockFlagPos
     }
 
+    @JvmName("getLockname1")
     fun getLockname(): String? {
         return lockname
     }
 
+    @JvmName("setLockname1")
     fun setLockname(lockname: String?) {
         this.lockname = lockname
     }
 
+    @JvmName("getOriginalPwd1")
     fun getOriginalPwd(): String? {
         return originalPwd
     }
 
+    @JvmName("setOriginalPwd1")
     fun setOriginalPwd(originalPwd: String?) {
         this.originalPwd = originalPwd
     }
 
+    @JvmName("getNewPwd1")
     fun getNewPwd(): String? {
         return newPwd
     }
 
+    @JvmName("setNewPwd1")
     fun setNewPwd(newPwd: String?) {
         this.newPwd = newPwd
         if (this.newPwd == null) this.newPwd = ""
     }
 
+    @JvmName("getStartDate1")
     fun getStartDate(): Long {
         return startDate
     }
 
+    @JvmName("setStartDate1")
     fun setStartDate(startDate: Long) {
         this.startDate = startDate
     }
 
+    @JvmName("getEndDate1")
     fun getEndDate(): Long {
         return endDate
     }
 
+    @JvmName("setEndDate1")
     fun setEndDate(endDate: Long) {
         this.endDate = endDate
     }
 
+    @JvmName("getKeyboardPwdType1")
     fun getKeyboardPwdType(): Byte {
         return keyboardPwdType
     }
 
+    @JvmName("setKeyboardPwdType1")
     fun setKeyboardPwdType(keyboardPwdType: Byte) {
         this.keyboardPwdType = keyboardPwdType
     }
@@ -342,10 +372,12 @@ class TransferData {
         this.calibationTime = calibationTime
     }
 
+    @JvmName("getTransferData1")
     fun getTransferData(): ByteArray {
         return transferData
     }
 
+    @JvmName("setTransferData1")
     fun setTransferData(transferData: ByteArray) {
         this.transferData = transferData
     }
@@ -509,7 +541,7 @@ class TransferData {
     }
 
     fun hasCyclicConfig(): Boolean {
-        return if (validityInfo == null || validityInfo!!.cyclicConfigs == null || validityInfo!!.cyclicConfigs.size == 0 || validityInfo!!.modeType == ValidityInfo.Companion.TIMED) {
+        return if (validityInfo == null || validityInfo!!.cyclicConfigs == null || validityInfo!!.cyclicConfigs!!.size == 0 || validityInfo!!.modeType == ValidityInfo.Companion.TIMED) {
             false
         } else true
     }

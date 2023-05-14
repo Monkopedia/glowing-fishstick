@@ -1330,7 +1330,7 @@ internal object CommandUtil_V3 {
                     }
                     values[1] = parType.toByte()
                     values[2] = 6
-                    val icKey: ByteArray = hotelData.getICKeyByteArray()
+                    val icKey: ByteArray = hotelData.getICKeyByteArray()!!
                     System.arraycopy(icKey, 0, values, 3, icKey.size)
                 }
                 HotelData.Companion.TYPE_AES_KEY -> {
@@ -1341,7 +1341,7 @@ internal object CommandUtil_V3 {
                     }
                     values[1] = parType.toByte()
                     values[2] = 16
-                    val icKeyAes: ByteArray = hotelData.getAesKeyByteArray()
+                    val icKeyAes: ByteArray = hotelData.getAesKeyByteArray()!!
                     System.arraycopy(icKeyAes, 0, values, 3, icKeyAes.size)
                 }
                 HotelData.Companion.TYPE_HOTEL_BUILDING_FLOOR -> {

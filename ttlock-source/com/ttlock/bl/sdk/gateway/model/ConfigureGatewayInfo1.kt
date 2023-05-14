@@ -28,7 +28,7 @@ class ConfigureGatewayInfo {
      */
     var plugVersion = 2
     fun getMd5UserPwd(): String? {
-        if (userPwd != null && userPwd!!.length != 32) userPwd = DigitUtil.getMD5(userPwd)
+        if (userPwd != null && userPwd!!.length != 32) userPwd = DigitUtil.getMD5(userPwd!!)
         return userPwd
     }
 
@@ -59,82 +59,102 @@ class ConfigureGatewayInfo {
         return nameBytes
     }
 
+    @JvmName("getSsid1")
     fun getSsid(): String {
         return ssid
     }
 
+    @JvmName("setSsid1")
     fun setSsid(ssid: String) {
         this.ssid = ssid
     }
 
+    @JvmName("getWifiPwd1")
     fun getWifiPwd(): String {
         return wifiPwd
     }
 
+    @JvmName("setWifiPwd1")
     fun setWifiPwd(wifiPwd: String) {
         this.wifiPwd = wifiPwd
     }
 
+    @JvmName("getServer1")
     fun getServer(): String {
         return server
     }
 
+    @JvmName("setServer1")
     fun setServer(server: String) {
         this.server = server
     }
 
+    @JvmName("getPort1")
     fun getPort(): Int {
         return port
     }
 
+    @JvmName("setPort1")
     fun setPort(port: Int) {
         this.port = port
     }
 
+    @JvmName("getUid1")
     fun getUid(): Int {
         return uid
     }
 
+    @JvmName("setUid1")
     fun setUid(uid: Int) {
         this.uid = uid
     }
 
+    @JvmName("getUserPwd1")
     fun getUserPwd(): String? {
         return userPwd
     }
 
+    @JvmName("setUserPwd1")
     fun setUserPwd(userPwd: String?) {
         this.userPwd = userPwd
     }
 
+    @JvmName("getCompanyId1")
     fun getCompanyId(): Int {
         return companyId
     }
 
+    @JvmName("setCompanyId1")
     fun setCompanyId(companyId: Int) {
         this.companyId = companyId
     }
 
+    @JvmName("getBranchId1")
     fun getBranchId(): Int {
         return branchId
     }
 
+    @JvmName("setBranchId1")
     fun setBranchId(branchId: Int) {
         this.branchId = branchId
     }
 
+    @JvmName("getPlugName1")
     fun getPlugName(): String? {
         return plugName
     }
 
+    @JvmName("setPlugName1")
     fun setPlugName(plugName: String?) {
         this.plugName = plugName
     }
 
+    @JvmName("getPlugVersion1")
     fun getPlugVersion(): Int {
         return plugVersion
     }
 
+    @JvmName("setPlugVersion1")
     fun setPlugVersion(plugVersion: Int) {
         this.plugVersion = plugVersion
     }

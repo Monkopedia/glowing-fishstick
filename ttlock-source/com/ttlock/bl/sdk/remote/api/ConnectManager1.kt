@@ -1,10 +1,13 @@
 package com.ttlock.bl.sdk.remote.api
 
-import android.os.Handler
+import android.util.Handler
+import android.util.TextUtils
 import com.ttlock.bl.sdk.device.Remote
 import com.ttlock.bl.sdk.remote.callback.ConnectCallback
+import com.ttlock.bl.sdk.remote.callback.RemoteCallback
 import com.ttlock.bl.sdk.remote.model.ConnectParam
 import com.ttlock.bl.sdk.remote.model.OperationType
+import com.ttlock.bl.sdk.remote.model.RemoteError
 
 /**
  * Created on  2019/4/12 SetLockTimeCallback 11:30
@@ -16,7 +19,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
     private var mCurrentMac: String? = null
     private var mConnectParam: ConnectParam?
     private val mDataCheckErrorRunnable = Runnable {
-        val mCallback: RemoteCallback = RemoteCallbackManager.Companion.getInstance().getCallback()
+        val mCallback: RemoteCallback? = RemoteCallbackManager.Companion.getInstance().getCallback()
         if (mCallback != null) {
             mCallback.onFail(RemoteError.DATA_FORMAT_ERROR)
         }
@@ -48,7 +51,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
 
     override fun onFail(error: RemoteError?) {
         val callbackType: Int = RemoteCallbackManager.Companion.getInstance().getOperationType()
-        val mCallback: RemoteCallback = RemoteCallbackManager.Companion.getInstance().getCallback()
+        val mCallback: RemoteCallback? = RemoteCallbackManager.Companion.getInstance().getCallback()
         if (mCallback != null) {
             if (!TextUtils.isEmpty(mCurrentMac)) {
                 retryConnect(callbackType, mCallback)
@@ -59,7 +62,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
     }
 
     private object InstanceHolder {
-        private val mInstance = ConnectManager()
+        val mInstance = ConnectManager()
     }
 
     fun removeDataCheckTimer() {

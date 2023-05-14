@@ -1,13 +1,19 @@
 package com.ttlock.bl.sdk.util
 
-import android.content.Context
+import android.util.ConnectivityManager
+import android.util.Context
+import android.util.NetworkInfo
+import android.util.TextUtils
+import android.util.WifiConfiguration
+import android.util.WifiInfo
+import android.util.WifiManager
 import java.lang.Exception
 
 /**
  * Created by TTLock on 2017/3/21.
  */
 object NetworkUtil {
-    fun getWifiSSid(context: Context): String? {
+    fun getWifiSSid(context: Context): String {
 //        WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
 //        String ssid = "";
 //        if(wifiManager != null) {
@@ -18,8 +24,8 @@ object NetworkUtil {
 //                    ssid = ssid.substring(1, ssid.length() - 1);
 //            }
 //        }
-        val wifiManager: WifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        var ssid = ""
+        val wifiManager: WifiManager? = context.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+        var ssid: String? = ""
         var wifiInfo: WifiInfo? = null
         try {
             if (wifiManager != null) {
@@ -30,8 +36,8 @@ object NetworkUtil {
                 }
             }
             if (ssid == "<unknown ssid>") {
-                val connectivityManager: ConnectivityManager =
-                    context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                val connectivityManager: ConnectivityManager? =
+                    context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
                 if (connectivityManager != null) {
                     val networkInfo: NetworkInfo = connectivityManager.getActiveNetworkInfo()
                     ssid = networkInfo.getExtraInfo()
@@ -40,8 +46,8 @@ object NetworkUtil {
             }
             if (TextUtils.isEmpty(ssid) && wifiInfo != null) {
                 val networkId: Int = wifiInfo.getNetworkId()
-                val netConfList: List<WifiConfiguration> = wifiManager.getConfiguredNetworks()
-                for (wificonf in netConfList) if (wificonf.networkId === networkId) {
+                val netConfList: List<WifiConfiguration> = wifiManager!!.getConfiguredNetworks()
+                for (wificonf in netConfList) if (wificonf.networkId == networkId) {
                     ssid = wificonf.SSID
                     break
                 }
@@ -50,7 +56,7 @@ object NetworkUtil {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        return ssid
+        return ssid!!
     }
 
     /**

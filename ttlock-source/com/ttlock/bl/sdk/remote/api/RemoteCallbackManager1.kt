@@ -2,7 +2,10 @@ package com.ttlock.bl.sdk.remote.api
 
 import android.util.SparseArray
 import com.ttlock.bl.sdk.remote.callback.ConnectCallback
+import com.ttlock.bl.sdk.remote.callback.RemoteCallback
+import com.ttlock.bl.sdk.remote.callback.ScanRemoteCallback
 import com.ttlock.bl.sdk.remote.model.OperationType
+import com.ttlock.bl.sdk.remote.model.RemoteError
 
 /**
  * Created on  2019/4/2 0002 15:12
@@ -18,7 +21,7 @@ internal class RemoteCallbackManager private constructor() {
     }
 
     private object InstanceHolder {
-        private val mInstance = RemoteCallbackManager()
+        val mInstance = RemoteCallbackManager()
     }
 
     fun setScanCallback(callback: ScanRemoteCallback?) {
@@ -71,7 +74,7 @@ internal class RemoteCallbackManager private constructor() {
             return null
         }
         val operationType: Int = mCallbackArray.keyAt(0)
-        val currentCallback: RemoteCallback = mCallbackArray.get(operationType)
+        val currentCallback: RemoteCallback? = mCallbackArray.get(operationType)
         if (currentCallback != null) {
             mCallbackArray.clear()
         }

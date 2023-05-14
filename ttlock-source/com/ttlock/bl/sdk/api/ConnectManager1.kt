@@ -109,7 +109,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
             OperationType.INIT_LOCK -> mApi.initLock(device as ExtendedBluetoothDevice)
             OperationType.INIT_KEYPAD -> WirelessKeypadSDKApi.Companion.initKeyapd(
                 device as WirelessKeypad,
-                mConnectParam
+                mConnectParam!!
             )
             OperationType.GET_LOCK_VERSION -> mApi.getLockVersion()
             OperationType.CONTROL_LOCK -> {
