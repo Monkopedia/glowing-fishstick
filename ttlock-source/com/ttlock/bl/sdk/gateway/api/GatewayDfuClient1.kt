@@ -18,7 +18,7 @@ class GatewayDfuClient {
     }
 
     fun startDfu(
-        context: Context?,
+        context: Context,
         clientId: String?,
         accessToken: String?,
         gatewayId: Int,

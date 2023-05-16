@@ -12,7 +12,7 @@ import java.math.BigInteger
  */
 object FeatureValueUtil {
     fun isSupportFeature(lockData: String?, newFeature: Int): Boolean {
-        val lockDataObj: LockData = EncryptionUtil.parseLockData(lockData)
+        val lockDataObj: LockData? = EncryptionUtil.parseLockData(lockData)
         return isSupportFeature(lockDataObj, newFeature)
     }
 

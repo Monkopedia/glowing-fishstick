@@ -1,9 +1,18 @@
 package com.ttlock.bl.sdk.util
 
-import android.text.TextUtils
 import android.util.TextUtils
+import com.scaf.android.client.CodecUtils
+import com.ttlock.bl.sdk.api.ParamInvalidException
 import com.ttlock.bl.sdk.constant.Feature
+import com.ttlock.bl.sdk.entity.HotelInfo
+import com.ttlock.bl.sdk.entity.PowerSaverWorkMode
+import json.JSONArray
+import json.JSONException
+import json.JSONObject
 import java.lang.Exception
+import java.security.MessageDigest
+import java.security.NoSuchAlgorithmException
+import java.text.SimpleDateFormat
 import java.util.*
 import java.util.regex.Pattern
 import kotlin.collections.LinkedHashSet
@@ -16,7 +25,7 @@ object DigitUtil {
     fun generateRandomByte(): Byte {
         var randomByte: Byte = 0
         do {
-            randomByte = (Math.random() * 128).toByte()
+            randomByte = (Math.random() * 128).toInt().toByte()
         } while (randomByte.toInt() == 0)
         return randomByte
     }
@@ -35,7 +44,7 @@ object DigitUtil {
             if (r >= 10) {
                 r = 9.0
             }
-            bytes[i] = (r + 48).toByte()
+            bytes[i] = (r + 48).toInt().toByte()
         }
         return bytes
     }
@@ -59,7 +68,7 @@ object DigitUtil {
     }
 
     fun shortToByteArray(value: Short): ByteArray {
-        var value = value
+        var value = value.toInt()
         val shortByteArray = ByteArray(2)
         for (i in 1 downTo 0) {
             shortByteArray[i] = value.toByte()
@@ -124,21 +133,21 @@ object DigitUtil {
     }
 
     fun byteArrayToShort(array: ByteArray): Short {
-        return (array[1] and 0xff or (array[0] shl 8)).toShort()
+        return (array[1].toInt() and 0xff or (array[0].toInt() shl 8)).toShort()
     }
 
     fun byteToHex(value: Byte): String {
-        var hex = Integer.toHexString(value and 0xFF)
+        var hex = Integer.toHexString(value.toInt() and 0xFF)
         if (hex.length == 1) hex = "0$hex"
         return hex
     }
 
     fun fourBytesToLong(data: ByteArray): Long {
         var res: Long = 0
-        res = res or (data[0] shl 24L and 0xFF000000L)
-        res = res or (data[1] shl 16L and 0x00FF0000)
-        res = res or (data[2] shl 8L and 0x0000FF00)
-        res = res or (data[3] and 0xFF)
+        res = res or (data[0].toLong() shl 24 and 0xFF000000L)
+        res = res or (data[1].toLong() shl 16 and 0x00FF0000)
+        res = res or (data[2].toLong() shl 8 and 0x0000FF00)
+        res = res or (data[3].toLong() and 0xFF)
         LogUtil.d("res:$res", DBG)
         return res
     }
@@ -167,11 +176,11 @@ object DigitUtil {
     // TODO:
     fun sixBytesToLong(data: ByteArray): Long {
         var res = 0L
-        res = res or (data[0].toLong() shl 40L and 0xFF0000000000L)
-        res = res or (data[1].toLong() shl 32L and 0xFF00000000L)
-        res = res or (data[2].toLong() shl 24L and 0x0000FF000000L)
-        res = res or (data[3].toLong() shl 16L and 0x000000FF0000L)
-        res = res or (data[4].toLong() shl 8L and 0x00000000FF00L)
+        res = res or (data[0].toLong() shl 40 and 0xFF0000000000L)
+        res = res or (data[1].toLong() shl 32 and 0xFF00000000L)
+        res = res or (data[2].toLong() shl 24 and 0x0000FF000000L)
+        res = res or (data[3].toLong() shl 16 and 0x000000FF0000L)
+        res = res or (data[4].toLong() shl 8 and 0x00000000FF00L)
         res = res or (data[5].toLong() and 0xFFL)
         LogUtil.d("res:$res", DBG)
         return res
@@ -216,7 +225,7 @@ object DigitUtil {
         val length = bytes.size
         var sum: Short = 0
         for (i in 0 until length) {
-            sum += (bytes[i] and 0xff).toShort()
+            sum = (sum + (bytes[i].toInt() and 0xff)).toShort()
         }
         LogUtil.d("sum:$sum")
         return shortToByteArray(sum)
@@ -243,7 +252,7 @@ object DigitUtil {
 
     fun stringDividerByDotToByteArray(source: String): ByteArray {
         val originalBytes = source.toByteArray()
-        val originalString: String = String(Base64.decode(originalBytes, Base64.DEFAULT))
+        val originalString: String = String(Base64.getDecoder().decode(originalBytes))
         LogUtil.d("originalString:$originalString", DBG)
         val strings = originalString.split(",").toTypedArray()
         val len = strings.size
@@ -280,7 +289,7 @@ object DigitUtil {
     fun convertWeekDays(oriWeekDays: String?): String? {
         if (!TextUtils.isEmpty(oriWeekDays)) {
             try {
-                val jsonArray = JSONArray(oriWeekDays)
+                val jsonArray = JSONArray(oriWeekDays!!)
                 val newJsonArray = JSONArray()
                 for (i in 0 until jsonArray.length()) {
                     var week = jsonArray.get(i) as Int
@@ -381,7 +390,7 @@ object DigitUtil {
      * 0123456789
      */
     fun getCheckTable(): String {
-        val set: MutableSet<*> = LinkedHashSet<Any?>()
+        val set: MutableSet<Int> = LinkedHashSet()
         while (set.size < 10) {
             set.add(getRandomIntegerByUpperBound(10))
         }
@@ -398,7 +407,7 @@ object DigitUtil {
         return random.nextInt(upperBound)
     }
 
-    fun getPowerWorkModeValue(powerSaverWorkModeList: List<PowerSaverWorkMode?>?): Byte {
+    fun getPowerWorkModeValue(powerSaverWorkModeList: List<PowerSaverWorkMode>?): Byte {
         if (powerSaverWorkModeList == null || powerSaverWorkModeList.size == 0) {
             return 0
         }
@@ -416,13 +425,13 @@ object DigitUtil {
      */
     fun calSectorValue(sectors: ArrayList<Int>?): Short {
         if (sectors == null) return 0
-        var sectorValue: Short = 0
+        var sectorValue: Int = 0
         for (i in sectors.indices) {
-            sectorValue = sectorValue or (1.toShort() shl 15 - sectors[i]).toShort()
+            sectorValue = sectorValue or (1 shl 15 - sectors[i])
         }
         return if (sectorValue.toInt() == -1) { // 全部设置
             0
-        } else sectorValue
+        } else sectorValue.toShort()
     }
 
     /**
@@ -434,12 +443,12 @@ object DigitUtil {
         if (sectorStr == null) {
             return 0
         }
-        var sectorValue: Short = 0
+        var sectorValue: Int = 0
         try {
             val sectors = sectorStr.split(",").toTypedArray()
             for (i in sectors.indices) {
                 sectorValue =
-                    sectorValue or (1.toShort() shl 16 - Integer.valueOf(sectors[i])).toShort()
+                    sectorValue or (1 shl 16 - Integer.valueOf(sectors[i]))
             }
             // todo:
             if (sectorValue.toInt() == -1) { // 全部设置
@@ -448,7 +457,7 @@ object DigitUtil {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        return sectorValue
+        return sectorValue.toShort()
     }
 
     /**
@@ -465,7 +474,7 @@ object DigitUtil {
         res[1] = (code shl 4).toByte()
         val secretKeyLong = java.lang.Long.valueOf(secretKey)
         var offset = 32
-        res[1] = (res[1] or (secretKeyLong shr offset)).toByte() // 增加增加映射数的半个字节
+        res[1] = (res[1].toInt() or (secretKeyLong shr offset).toInt()).toByte() // 增加增加映射数的半个字节
         for (i in 2..5) {
             offset -= 8
             res[i] = (secretKeyLong shr offset).toByte()
@@ -556,7 +565,7 @@ object DigitUtil {
     fun encodeLockData(originalStr: String): String {
         val encodedBytes = encodeDefaultPassword(originalStr.toByteArray())
         val encodedString = byteArrayToStringDividerByDot(encodedBytes)
-        return Base64.encodeToString(encodedString.toByteArray(), Base64.NO_WRAP)
+        return Base64.getEncoder().encodeToString(encodedString.toByteArray())
     }
 
     /**
@@ -919,7 +928,7 @@ object DigitUtil {
             return false
         }
         val regex =
-            "[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]"
+            Regex("[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]")
         return str.matches(regex)
     }
 

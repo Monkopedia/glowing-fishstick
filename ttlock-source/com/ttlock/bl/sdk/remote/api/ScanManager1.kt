@@ -1,6 +1,12 @@
 package com.ttlock.bl.sdk.remote.api
 
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothLeScanner
+import android.bluetooth.ScanCallback
+import android.bluetooth.ScanResult
 import com.ttlock.bl.sdk.device.Remote
+import com.ttlock.bl.sdk.remote.callback.ScanRemoteCallback
+import com.ttlock.bl.sdk.util.LogUtil
 import java.util.ArrayList
 
 /**
@@ -15,17 +21,17 @@ internal class ScanManager {
     private fun prepare() {
         if (mBluetoothAdapter == null) mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         if (scanner == null && mBluetoothAdapter != null) {
-            scanner = mBluetoothAdapter.getBluetoothLeScanner()
+            scanner = mBluetoothAdapter!!.getBluetoothLeScanner()
         }
         if (leScanCallback == null) { // TODO:更换对象
             leScanCallback = object : ScanCallback() {
 
-                fun onScanResult(callbackType: Int, result: ScanResult?) {
+                override fun onScanResult(callbackType: Int, result: ScanResult) {
                     super.onScanResult(callbackType, result)
-                    scanCallback.onScanRemote(Remote(result))
+                    scanCallback!!.onScanRemote(Remote(result))
                 }
 
-                fun onScanFailed(errorCode: Int) {
+                override fun onScanFailed(errorCode: Int) {
                     super.onScanFailed(errorCode)
                     LogUtil.w("errorCode:$errorCode")
                 }
@@ -39,17 +45,17 @@ internal class ScanManager {
         if (scanner == null) {
             LogUtil.w("BT le scanner not available")
         } else {
-            val settings: ScanSettings = Builder()
-                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-                .build()
-            val filters: MutableList<ScanFilter> = ArrayList<ScanFilter>()
-            filters.add(Builder().setServiceUuid(ParcelUuid.fromString(UUID_SERVICE)).build())
-            scanner.startScan(filters, settings, leScanCallback)
+//            val settings: ScanSettings = Builder()
+//                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+//                .build()
+//            val filters: MutableList<ScanFilter> = ArrayList<ScanFilter>()
+//            filters.add(Builder().setServiceUuid(ParcelUuid.fromString(UUID_SERVICE)).build())
+            scanner!!.startScan(UUID_SERVICE, leScanCallback)
         }
     }
 
     fun stopScan() { // TODO:
-        if (leScanCallback != null && scanner != null) scanner.stopScan(leScanCallback)
+        if (leScanCallback != null && scanner != null) scanner!!.stopScan(leScanCallback!!)
     }
 
     companion object {

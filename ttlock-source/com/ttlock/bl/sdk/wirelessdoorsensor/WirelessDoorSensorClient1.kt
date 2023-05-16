@@ -1,7 +1,19 @@
 package com.ttlock.bl.sdk.wirelessdoorsensor
 
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.util.Context
+import android.util.TextUtils
+import com.ttlock.bl.sdk.api.EncryptionUtil
+import com.ttlock.bl.sdk.base.BaseClient
+import com.ttlock.bl.sdk.device.WirelessDoorSensor
+import com.ttlock.bl.sdk.entity.LockData
+import com.ttlock.bl.sdk.util.LogUtil
 import com.ttlock.bl.sdk.wirelessdoorsensor.callback.EnterDfuCallback
+import com.ttlock.bl.sdk.wirelessdoorsensor.callback.InitDoorSensorCallback
+import com.ttlock.bl.sdk.wirelessdoorsensor.callback.ScanWirelessDoorSensorCallback
 import com.ttlock.bl.sdk.wirelessdoorsensor.model.ConnectParam
+import com.ttlock.bl.sdk.wirelessdoorsensor.model.DoorSensorError
 import com.ttlock.bl.sdk.wirelessdoorsensor.model.OperationType
 
 /**
@@ -14,21 +26,21 @@ class WirelessDoorSensorClient private constructor() : BaseClient<WirelessDoorSe
     }
 
     private object InstanceHolder {
-        private val mInstance = WirelessDoorSensorClient()
+        val mInstance = WirelessDoorSensorClient()
     }
 
-    fun startScan(callback: ScanWirelessDoorSensorCallback?) {
+    fun startScan(callback: ScanWirelessDoorSensorCallback) {
 //        Wirelessdoor.getInstance().setScanCallback(callback);
-        mApi.startScan(callback)
+        mApi!!.startScan(callback)
     }
 
     fun stopScan() {
-        mApi.stopScan()
+        mApi!!.stopScan()
         //        KeyFobCallbackManager.getInstance().clearScanCallback();
     }
 
     // todo:临时测试用
-    override fun prepareBTService(context: Context?) {
+    override fun prepareBTService(context: Context) {
         LogUtil.d("prepare service")
         //        mApi.prepareBTService(context);
         GattCallbackHelper.Companion.getInstance().prepare(context)
@@ -49,7 +61,7 @@ class WirelessDoorSensorClient private constructor() : BaseClient<WirelessDoorSe
         lockData: String?,
         callback: InitDoorSensorCallback
     ) {
-        val lockParam: LockData = EncryptionUtil.parseLockData(lockData)
+        val lockParam: LockData? = EncryptionUtil.parseLockData(lockData)
         if (lockParam == null) {
             callback.onFail(DoorSensorError.DATA_FORMAT_ERROR)
             return
@@ -58,9 +70,9 @@ class WirelessDoorSensorClient private constructor() : BaseClient<WirelessDoorSe
             .isBusy(OperationType.INIT, callback)
         ) {
             val connectParam = ConnectParam()
-            connectParam.lockmac = lockParam.lockMac
-            connectParam.lockKey = lockParam.lockKey
-            connectParam.aesKey = lockParam.aesKeyStr
+            connectParam.setLockmac(lockParam.lockMac)
+            connectParam.setLockKey(lockParam.lockKey)
+            connectParam.setAesKey(lockParam.aesKeyStr)
             ConnectManager.Companion.getInstance().storeConnectParamForCallback(connectParam)
             ConnectManager.Companion.getInstance().connect2Device(device)
         }
@@ -77,7 +89,7 @@ class WirelessDoorSensorClient private constructor() : BaseClient<WirelessDoorSe
             return
         }
         val bluetoothDevice: BluetoothDevice =
-            BluetoothAdapter.getDefaultAdapter().getRemoteDevice(doorSensorMac)
+            BluetoothAdapter.getDefaultAdapter().getRemoteDevice(doorSensorMac!!)
         val device = WirelessDoorSensor(bluetoothDevice)
         enterDfu(device, lockKey, aeskey, callback)
     }
@@ -97,8 +109,8 @@ class WirelessDoorSensorClient private constructor() : BaseClient<WirelessDoorSe
         ) {
             LogUtil.d("进行连接")
             val connectParam = ConnectParam()
-            connectParam.lockKey = lockKey
-            connectParam.aesKey = aeskey
+            connectParam.setLockKey( lockKey)
+            connectParam.setAesKey( aeskey)
             ConnectManager.Companion.getInstance().storeConnectParamForCallback(connectParam)
             ConnectManager.Companion.getInstance().connect2Device(device)
         } else {

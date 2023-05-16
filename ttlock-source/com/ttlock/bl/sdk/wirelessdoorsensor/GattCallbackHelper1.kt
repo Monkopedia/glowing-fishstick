@@ -107,7 +107,7 @@ class GattCallbackHelper : BaseGattCallbackHelper<WirelessDoorSensor?>() {
                         }
                     }
                 } else {
-                    val callback: DoorSensorCallback =
+                    val callback: DoorSensorCallback? =
                         DoorSensorCallbackManager.Companion.getInstance().getCallback()
                     if (callback != null) {
                         callback.onFail(DoorSensorError.FAILED)

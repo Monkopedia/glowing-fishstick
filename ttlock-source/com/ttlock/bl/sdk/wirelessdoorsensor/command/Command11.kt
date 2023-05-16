@@ -84,8 +84,8 @@ class Command {
         return AESUtil.aesEncrypt(macBytes, Command.Companion.defaultAeskey)
     }
 
-    fun getData(aesKeyArray: ByteArray?): ByteArray? {
-        return AESUtil.aesDecrypt(data, aesKeyArray)
+    fun getData(aesKeyArray: ByteArray): ByteArray? {
+        return AESUtil.aesDecrypt(data!!, aesKeyArray)
     }
 
     @JvmName("setData1")
@@ -110,7 +110,7 @@ class Command {
             Command.Companion.DBG
         )
         this.data = AESUtil.aesEncrypt(data, aesKeyArray)
-        length = this.data.size.toByte()
+        length = this.data!!.size.toByte()
     }
 
     fun isChecksumValid(): Boolean {

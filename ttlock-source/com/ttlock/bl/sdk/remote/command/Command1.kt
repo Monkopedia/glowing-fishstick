@@ -62,31 +62,35 @@ class Command {
 //        LogUtil.d("mIsChecksumValid : " + mIsChecksumValid, DBG);
     }
 
+    @JvmName("setCommand1")
     fun setCommand(command: Byte) {
         this.command = command
     }
 
+    @JvmName("getCommand1")
     fun getCommand(): Byte {
         return command
     }
 
-    fun getData(): ByteArray {
-        return getData(getAeskey())
+    @JvmName("getData1")
+    fun getData(): ByteArray? {
+        return getData(getAeskey()!!)
     }
 
-    fun getAeskey(): ByteArray {
+    fun getAeskey(): ByteArray? {
         var macArr: Array<String?>? = mac!!.split(":").toTypedArray()
         macArr = reverseArray(macArr)
         val macBytes = hexStringArrToByteArr(macArr)
         return AESUtil.aesEncrypt(macBytes, Command.Companion.defaultAeskey)
     }
 
-    fun getData(aesKeyArray: ByteArray?): ByteArray {
-        val values: ByteArray
-        values = AESUtil.aesDecrypt(data, aesKeyArray)
+    fun getData(aesKeyArray: ByteArray): ByteArray? {
+        val values: ByteArray?
+        values = AESUtil.aesDecrypt(data!!, aesKeyArray)
         return values
     }
 
+    @JvmName("setData1")
     fun setData(data: ByteArray?) {
         setData(data, getAeskey())
     }
@@ -106,7 +110,7 @@ class Command {
             Command.Companion.DBG
         )
         this.data = AESUtil.aesEncrypt(data, aesKeyArray)
-        length = this.data.size.toByte()
+        length = this.data!!.size.toByte()
     }
 
     fun isChecksumValid(): Boolean {

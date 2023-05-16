@@ -15,15 +15,15 @@ object CommandUtil {
         val data = ByteArray(6 + 16 + 4)
         val command: Command = Command(Command.Companion.COMM_SET_LOCK)
         try {
-            command.mac = doorSensor.address
+            command.mac = doorSensor.getAddress()
             // 低在前高在后
-            val lockmacBytes: ByteArray = DigitUtil.getReverseMacArray(param.lockmac)
+            val lockmacBytes: ByteArray = DigitUtil.getReverseMacArray(param.getLockmac()!!)!!
             System.arraycopy(lockmacBytes, 0, data, 0, 6)
-            val aeskeyBytes: ByteArray = DigitUtil.convertAesKeyStrToBytes(param.aesKey)
+            val aeskeyBytes: ByteArray = DigitUtil.convertAesKeyStrToBytes(param.getAesKey()!!)!!
             System.arraycopy(aeskeyBytes, 0, data, 6, 16)
-            val lockKey = param.lockKey
+            val lockKey = param.getLockKey()
             val lockKeyBytes: ByteArray =
-                DigitUtil.integerToByteArray(Integer.valueOf(DigitUtil.decodeLockData(lockKey)))
+                DigitUtil.integerToByteArray(Integer.valueOf(DigitUtil.decodeLockData(lockKey!!)))
             System.arraycopy(lockKeyBytes, 0, data, 22, 4)
             command.setData(data)
         } catch (e: Exception) {
@@ -36,7 +36,7 @@ object CommandUtil {
         // 管理员校验都通过
         val data = ByteArray(11)
         val command: Command = Command(Command.Companion.COMM_CHECK_ADMIN)
-        command.mac = doorSensor.address
+        command.mac = doorSensor.getAddress()
         command.setData(data)
         GattCallbackHelper.Companion.getInstance().sendCommand(command.buildCommand())
     }
@@ -48,7 +48,7 @@ object CommandUtil {
      */
     fun checkRandom(doorSensor: WirelessDoorSensor, param: ConnectParam, responseRandom: Long) {
         val command: Command = Command(Command.Companion.COMM_CHECK_RANDOM)
-        command.mac = doorSensor.address
+        command.mac = doorSensor.getAddress()
         val lockKeyValue: Long = java.lang.Long.valueOf(DigitUtil.decodeLockData(param.lockKey))
         val sumBytes: ByteArray = DigitUtil.getUnlockPwdBytes_new(responseRandom, lockKeyValue)
         command.setData(sumBytes)

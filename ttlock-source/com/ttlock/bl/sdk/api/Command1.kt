@@ -136,10 +136,12 @@ class Command {
         }
     }
 
+    @JvmName("setCommand1")
     fun setCommand(command: Byte) {
         this.command = command
     }
 
+    @JvmName("getCommand1")
     fun getCommand(): Byte {
         return command
     }
@@ -152,17 +154,19 @@ class Command {
         this.scene = scene
     }
 
+    @JvmName("setData1")
     fun setData(data: ByteArray?) {
         this.data = CodecUtils.encodeWithEncrypt(data, encrypt)
         length = this.data!!.size.toByte()
     }
 
+    @JvmName("getData1")
     fun getData(): ByteArray {
         return CodecUtils.decodeWithEncrypt(data, encrypt)!!
     }
 
-    fun getData(aesKeyArray: ByteArray?): ByteArray {
-        return AESUtil.aesDecrypt(data, aesKeyArray)!!
+    fun getData(aesKeyArray: ByteArray): ByteArray {
+        return AESUtil.aesDecrypt(data!!, aesKeyArray)!!
     }
 
     fun setData(data: ByteArray?, aesKeyArray: ByteArray?) {

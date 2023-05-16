@@ -8,10 +8,22 @@ class BluetoothManager {
 }
 
 class BluetoothAdapter {
+
     fun isEnabled(): Boolean = true
     fun getRemoteDevice(addr: String): BluetoothDevice = BluetoothDevice()
     fun getBluetoothLeScanner(): BluetoothLeScanner {
         return BluetoothLeScanner()
+    }
+
+    fun disable(): Boolean {
+        return true
+    }
+
+    fun getState(): Int {
+        return STATE_ON
+    }
+
+    fun enable() {
     }
 
     companion object {
@@ -51,12 +63,19 @@ class BluetoothGatt {
 
     fun writeDescriptor(descriptor: BluetoothGattDescriptor): Boolean = false
     fun writeCharacteristic(characteristic: BluetoothGattCharacteristic): Boolean = false
-    fun readCharacteristic(modelNumberCharacteristic: BluetoothGattCharacteristic) {
-
+    fun readCharacteristic(modelNumberCharacteristic: BluetoothGattCharacteristic): Boolean {
+        return true
     }
 
     fun requestConnectionPriority(connectionPriority: Int): Boolean {
         return false
+    }
+
+    fun readDescriptor(descriptor: BluetoothGattDescriptor): Boolean {
+        return true
+    }
+
+    fun readRemoteRssi() {
     }
 
     companion object {
@@ -161,6 +180,8 @@ class BluetoothGattCharacteristic {
     }
 
     companion object {
+        const val PROPERTY_READ: Int = 6
+        const val WRITE_TYPE_DEFAULT: Int = 5
         const val PROPERTY_INDICATE: Int = 4
         const val PROPERTY_NOTIFY: Int = 3
         const val PROPERTY_WRITE = 0
@@ -195,6 +216,9 @@ open class ScanCallback {
 
 class BluetoothLeScanner {
     fun startScan(uuidService: String, leScanCallback: ScanCallback?) {
+
+    }
+    fun startScan(uuidService: List<String>, leScanCallback: ScanCallback?) {
 
     }
 

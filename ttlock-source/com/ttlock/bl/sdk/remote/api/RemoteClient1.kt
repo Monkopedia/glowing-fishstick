@@ -1,8 +1,17 @@
 package com.ttlock.bl.sdk.remote.api
 
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.util.Context
+import com.ttlock.bl.sdk.api.EncryptionUtil
 import com.ttlock.bl.sdk.device.Remote
+import com.ttlock.bl.sdk.entity.LockData
+import com.ttlock.bl.sdk.remote.callback.GetRemoteSystemInfoCallback
+import com.ttlock.bl.sdk.remote.callback.InitRemoteCallback
+import com.ttlock.bl.sdk.remote.callback.ScanRemoteCallback
 import com.ttlock.bl.sdk.remote.model.ConnectParam
 import com.ttlock.bl.sdk.remote.model.OperationType
+import com.ttlock.bl.sdk.remote.model.RemoteError
 
 /**
  * Created by TTLock on 2021/1/25.
@@ -15,15 +24,11 @@ class RemoteClient private constructor() {
     }
 
     private object InstanceHolder {
-        private val mInstance = RemoteClient()
+        val mInstance = RemoteClient()
     }
 
     fun isBLEEnabled(context: Context): Boolean {
         return mApi.isBLEEnabled(context)
-    }
-
-    fun requestBleEnable(activity: Activity) {
-        mApi.requestBleEnable(activity)
     }
 
     fun prepareBTService(context: Context?) {
@@ -41,7 +46,7 @@ class RemoteClient private constructor() {
     }
 
     fun initialize(device: Remote?, lockData: String?, callback: InitRemoteCallback) {
-        val lockParam: LockData = EncryptionUtil.parseLockData(lockData)
+        val lockParam: LockData? = EncryptionUtil.parseLockData(lockData)
         if (device == null || lockParam == null) {
             callback.onFail(RemoteError.DATA_FORMAT_ERROR)
             return
@@ -52,9 +57,9 @@ class RemoteClient private constructor() {
 //                mApi.init(device);
 //            } else {
             val connectParam = ConnectParam()
-            connectParam.lockmac = lockParam.lockMac
-            connectParam.lockKey = lockParam.lockKey
-            connectParam.aesKey = lockParam.aesKeyStr
+            connectParam.setLockmac(lockParam.lockMac)
+            connectParam.setLockKey(lockParam.lockKey)
+            connectParam.setAesKey(lockParam.aesKeyStr)
             ConnectManager.Companion.getInstance().storeConnectParamForCallback(connectParam)
             ConnectManager.Companion.getInstance().connect2Device(device)
             //            }

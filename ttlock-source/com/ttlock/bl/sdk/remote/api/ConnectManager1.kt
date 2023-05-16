@@ -40,7 +40,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
 //        startDataCheckTimer();
         if (mConnectParam == null) return
         when (callbackType) {
-            OperationType.INIT -> mApi.init(device)
+            OperationType.INIT -> mApi.init(device!!)
             else -> {}
         }
     }

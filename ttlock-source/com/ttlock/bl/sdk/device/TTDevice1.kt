@@ -44,10 +44,12 @@ abstract class TTDevice {
         mAddress = device.getAddress()
     }
 
+    @JvmName("getDevice1")
     fun getDevice(): BluetoothDevice? {
         return device
     }
 
+    @JvmName("setDevice1")
     fun setDevice(device: BluetoothDevice) {
         this.device = device
         name = device.getName()
@@ -63,18 +65,23 @@ abstract class TTDevice {
     }
 
     protected abstract fun initial()
+
+    @JvmName("getScanRecord1")
     fun getScanRecord(): ByteArray? {
         return scanRecord
     }
 
+    @JvmName("setScanRecord1")
     fun setScanRecord(scanRecord: ByteArray) {
         this.scanRecord = scanRecord
     }
 
+    @JvmName("getName1")
     fun getName(): String? {
         return name
     }
 
+    @JvmName("setName1")
     fun setName(name: String?) {
         this.name = name
     }
@@ -87,34 +94,42 @@ abstract class TTDevice {
         this.mAddress = mAddress
     }
 
+    @JvmName("getRssi1")
     fun getRssi(): Int {
         return rssi
     }
 
+    @JvmName("setRssi1")
     fun setRssi(rssi: Int) {
         this.rssi = rssi
     }
 
+    @JvmName("getBatteryCapacity1")
     fun getBatteryCapacity(): Int {
         return batteryCapacity
     }
 
+    @JvmName("setBatteryCapacity1")
     fun setBatteryCapacity(batteryCapacity: Int) {
         this.batteryCapacity = batteryCapacity
     }
 
+    @JvmName("isSettingMode1")
     fun isSettingMode(): Boolean {
         return isSettingMode
     }
 
+    @JvmName("setSettingMode1")
     fun setSettingMode(settingMode: Boolean) {
         isSettingMode = settingMode
     }
 
+    @JvmName("getNumber1")
     fun getNumber(): String? {
         return number
     }
 
+    @JvmName("setNumber1")
     fun setNumber(number: String?) {
         this.number = number
     }

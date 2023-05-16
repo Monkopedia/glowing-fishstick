@@ -122,8 +122,8 @@ object GsonUtil {
                 return jsonObject.getJSONObject(key)
             }
         } catch (e: Exception) {
-            return JSONObject(json)
+            return JSONObject()
         }
-        return JSONObject(json)
+        return JSONObject()
     }
 }

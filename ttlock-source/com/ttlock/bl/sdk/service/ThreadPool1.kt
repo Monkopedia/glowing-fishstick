@@ -10,7 +10,7 @@ import java.util.concurrent.Executors
 object ThreadPool {
     // 线程个数
     private val threadCount = Runtime.getRuntime().availableProcessors() * 2
-    private val mThreadPool: ExecutorService? = null
+    private var mThreadPool: ExecutorService? = null
     fun getThreadPool(): ExecutorService {
         if (ThreadPool.mThreadPool == null) {
             synchronized(ExecutorService::class.java) {
@@ -20,6 +20,6 @@ object ThreadPool {
                 }
             }
         }
-        return ThreadPool.mThreadPool
+        return ThreadPool.mThreadPool!!
     }
 }

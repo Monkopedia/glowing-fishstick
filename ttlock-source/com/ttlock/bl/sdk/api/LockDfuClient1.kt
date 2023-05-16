@@ -41,7 +41,7 @@ class LockDfuClient {
     }
 
     fun startDfu(
-        context: Context?,
+        context: Context,
         lockData: String?,
         lockMac: String?,
         firmwarePackage: String?,

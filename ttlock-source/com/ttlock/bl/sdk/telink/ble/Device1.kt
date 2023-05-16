@@ -40,7 +40,7 @@ class Device(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int) :
         }
     }
 
-    override fun onServicesDiscovered(services: List<BluetoothGattService?>) {
+    override fun onServicesDiscovered(services: List<BluetoothGattService>) {
         super.onServicesDiscovered(services)
         //        this.enablePcmNotification();
         if (mDeviceStateCallback != null) {

@@ -401,7 +401,7 @@ class GattCallbackHelper private constructor() : BluetoothGattCallback() {
                         }
                     }
                 } else {
-                    val callback: RemoteCallback =
+                    val callback: RemoteCallback? =
                         RemoteCallbackManager.Companion.getInstance().getCallback()
                     if (callback != null) {
                         callback.onFail(RemoteError.FAILED)

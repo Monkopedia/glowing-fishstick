@@ -64,7 +64,7 @@ class Command {
 
     @JvmName("getData1")
     fun getData(): ByteArray? {
-        return getData(getAeskey())
+        return getData(getAeskey()!!)
     }
 
     fun getAeskey(): ByteArray? {
@@ -77,9 +77,9 @@ class Command {
         return aeskey
     }
 
-    fun getData(aesKeyArray: ByteArray?): ByteArray? {
+    fun getData(aesKeyArray: ByteArray): ByteArray? {
         val values: ByteArray?
-        values = AESUtil.aesDecrypt(data, aesKeyArray)
+        values = AESUtil.aesDecrypt(data!!, aesKeyArray)
         return values
     }
 

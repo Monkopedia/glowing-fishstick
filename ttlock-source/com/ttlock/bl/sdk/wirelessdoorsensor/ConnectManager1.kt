@@ -1,8 +1,12 @@
 package com.ttlock.bl.sdk.wirelessdoorsensor
 
-import android.os.Handler
+import android.util.Handler
+import android.util.TextUtils
+import com.ttlock.bl.sdk.device.WirelessDoorSensor
 import com.ttlock.bl.sdk.wirelessdoorsensor.callback.ConnectCallback
+import com.ttlock.bl.sdk.wirelessdoorsensor.callback.DoorSensorCallback
 import com.ttlock.bl.sdk.wirelessdoorsensor.model.ConnectParam
+import com.ttlock.bl.sdk.wirelessdoorsensor.model.DoorSensorError
 import com.ttlock.bl.sdk.wirelessdoorsensor.model.OperationType
 
 /**
@@ -24,7 +28,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
         return mConnectParam
     }
 
-    override fun onConnectSuccess(device: WirelessDoorSensor?) {
+    override fun onConnectSuccess(device: WirelessDoorSensor) {
         val callbackType: Int = DoorSensorCallbackManager.Companion.getInstance().getOperationType()
         // TODO:
         if (mConnectParam == null) return
@@ -41,7 +45,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
 
     override fun onFail(error: DoorSensorError?) {
         val callbackType: Int = DoorSensorCallbackManager.Companion.getInstance().getOperationType()
-        val mCallback: DoorSensorCallback =
+        val mCallback: DoorSensorCallback? =
             DoorSensorCallbackManager.Companion.getInstance().getCallback()
         if (mCallback != null) {
             if (!TextUtils.isEmpty(mCurrentMac)) {
@@ -53,7 +57,7 @@ internal class ConnectManager private constructor() : ConnectCallback {
     }
 
     private object InstanceHolder {
-        private val mInstance = ConnectManager()
+        val mInstance = ConnectManager()
     }
 
     //    public void removeDataCheckTimer(){

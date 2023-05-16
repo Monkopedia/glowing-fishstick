@@ -1,6 +1,8 @@
 package com.ttlock.bl.sdk.scanner
 
-import android.os.Build
+import com.ttlock.bl.sdk.callback.OnScanFailedListener
+import com.ttlock.bl.sdk.util.LogUtil
+import java.util.UUID
 
 /**
  *
@@ -15,6 +17,7 @@ abstract class ScannerCompat {
     //    public OnScanFailedListener getOnScanFailedListener() {
     //        return onScanFailedListener;
     //    }
+    @JvmName("setOnScanFailedListener1")
     fun setOnScanFailedListener(onScanFailedListener: OnScanFailedListener?) {
         this.onScanFailedListener = onScanFailedListener
     }
@@ -22,6 +25,7 @@ abstract class ScannerCompat {
     //    public boolean isScanAll() {
     //        return scanAll;
     //    }
+    @JvmName("setScanAll1")
     fun setScanAll(scanAll: Boolean) {
         this.scanAll = scanAll
     }
@@ -40,8 +44,10 @@ abstract class ScannerCompat {
 //        });
     }
 
-    abstract fun startScanInternal(serviceUuids: Array<UUID?>?)
+    abstract fun startScanInternal(serviceUuids: Array<UUID>?)
     abstract fun stopScan()
+
+    @JvmName("setScanBongOnly1")
     fun setScanBongOnly(scanBongOnly: Boolean) {
         this.scanBongOnly = scanBongOnly
     }
@@ -53,9 +59,9 @@ abstract class ScannerCompat {
         protected var serviceUuids: Array<UUID> = arrayOf<UUID>(UUID.fromString(UUID_SERVICE))
         fun getScanner(): ScannerCompat? {
             if (mInstance != null) return mInstance
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) ScannerLollipop().also {
+            return ScannerLollipop().also {
                 mInstance = it
-            } else ScannerImplJB().also { mInstance = it }
+            }
         }
     }
 }

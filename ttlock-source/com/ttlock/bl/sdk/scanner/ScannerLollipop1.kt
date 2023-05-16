@@ -1,8 +1,15 @@
 package com.ttlock.bl.sdk.scanner
 
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothLeScanner
+import android.bluetooth.ScanCallback
+import android.bluetooth.ScanResult
+import com.ttlock.bl.sdk.api.ExtendedBluetoothDevice
 import com.ttlock.bl.sdk.service.ThreadPool
+import com.ttlock.bl.sdk.util.LogUtil
 import java.lang.Exception
 import java.util.ArrayList
+import java.util.UUID
 
 /**
  * Created by Sciener on 2016/5/9.
@@ -17,24 +24,24 @@ class ScannerLollipop : ScannerCompat() {
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
     }
 
-    override fun startScanInternal(serviceUuids: Array<UUID?>?) {
-        scanner = mBluetoothAdapter.getBluetoothLeScanner()
+    override fun startScanInternal(serviceUuids: Array<UUID>?) {
+        scanner = mBluetoothAdapter!!.getBluetoothLeScanner()
         if (scanner == null) {
             LogUtil.w("BT le scanner not available", DBG)
         } else {
-            val settings: ScanSettings = Builder()
-                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-                .build()
-            var filters: MutableList<ScanFilter?>? = ArrayList<ScanFilter?>()
-            filters!!.add(
-                Builder().setServiceUuid(ParcelUuid.fromString(ScannerCompat.Companion.UUID_SERVICE))
-                    .build()
-            )
-            LogUtil.d("Thread:" + Thread.currentThread())
-            LogUtil.d("scanCallback:$scanCallback", DBG)
-            if (scanAll) {
-                filters = null
-            }
+//            val settings: ScanSettings = Builder()
+//                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+//                .build()
+//            var filters: MutableList<ScanFilter?>? = ArrayList<ScanFilter?>()
+//            filters!!.add(
+//                Builder().setServiceUuid(ParcelUuid.fromString(ScannerCompat.Companion.UUID_SERVICE))
+//                    .build()
+//            )
+//            LogUtil.d("Thread:" + Thread.currentThread())
+//            LogUtil.d("scanCallback:$scanCallback", DBG)
+//            if (scanAll) {
+//                filters = null
+//            }
             /**
              * java.lang.NullPointerException: Attempt to invoke virtual method 'void com.android.bluetooth.gatt.ScanManager.registerScanner(java.util.UUID)' on a null object reference
              * at android.os.Parcel.readException(Parcel.java:2014)
@@ -50,7 +57,7 @@ class ScannerLollipop : ScannerCompat() {
              * at java.lang.Thread.run(Thread.java:784)
              */
             try {
-                scanner.startScan(filters, settings, scanCallback)
+                scanner!!.startScan(serviceUuids?.map { it.toString() } ?: emptyList(), scanCallback)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -58,34 +65,32 @@ class ScannerLollipop : ScannerCompat() {
     }
 
     override fun stopScan() {
-        if (scanner != null && scanCallback != null && mBluetoothAdapter.isEnabled()) {
-            scanner.stopScan(scanCallback)
+        if (scanner != null && scanCallback != null && mBluetoothAdapter!!.isEnabled()) {
+            scanner!!.stopScan(scanCallback)
             LogUtil.d("scanCallback:$scanCallback", DBG)
         }
     }
 
     private inner class ScanCallbackImpl : ScanCallback() {
 
-        fun onScanResult(callbackType: Int, result: ScanResult?) {
+        override fun onScanResult(callbackType: Int, result: ScanResult) {
             super.onScanResult(callbackType, result)
             //            LogUtil.d("callbackType=" + callbackType + " scanResult=" + result, DBG);
             mIScanCallback!!.onScan(ExtendedBluetoothDevice(result))
         }
 
-        /**
-         * Callback when batch results are delivered.
-         *
-         * @param results List of scan results that are previously scanned.
-         */
-        fun onBatchScanResults(results: List<ScanResult?>?) {
-            super.onBatchScanResults(results)
-        }
+//        /**
+//         * Callback when batch results are delivered.
+//         *
+//         * @param results List of scan results that are previously scanned.
+//         */
+//        fun onBatchScanResults(results: List<ScanResult>?) {
+//            super.onBatchScanResults(results)
+//        }
 
-        fun onScanFailed(errorCode: Int) {
+        override fun onScanFailed(errorCode: Int) {
             super.onScanFailed(errorCode)
-            if (onScanFailedListener != null) {
-                onScanFailedListener.onScanFailed(errorCode)
-            }
+                onScanFailedListener?.onScanFailed(errorCode)
             //            restartBle();
             LogUtil.w("errorCode=$errorCode", DBG)
         }

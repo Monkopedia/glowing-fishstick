@@ -8,5 +8,5 @@ import com.ttlock.bl.sdk.device.WirelessDoorSensor
  * @author theodre
  */
 interface ConnectCallback : DoorSensorCallback {
-    fun onConnectSuccess(device: WirelessDoorSensor?)
+    fun onConnectSuccess(device: WirelessDoorSensor)
 }

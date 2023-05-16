@@ -1,6 +1,10 @@
 package com.ttlock.bl.sdk.remote.api
 
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
+import android.util.Context
 import com.ttlock.bl.sdk.device.Remote
+import com.ttlock.bl.sdk.remote.callback.ScanRemoteCallback
 import com.ttlock.bl.sdk.remote.command.CommandUtil
 
 /**
@@ -11,16 +15,8 @@ internal class WirelessKeyFobSDKApi {
     fun isBLEEnabled(context: Context): Boolean {
         val manager: BluetoothManager =
             context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        val adapter: BluetoothAdapter = manager.getAdapter()
+        val adapter: BluetoothAdapter? = manager.getAdapter()
         return adapter != null && adapter.isEnabled()
-    }
-
-    fun requestBleEnable(activity: Activity) {
-        val mBluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-        if (mBluetoothAdapter != null && !mBluetoothAdapter.isEnabled()) {
-            val enableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-            activity.startActivityForResult(enableIntent, REQUEST_ENABLE_BT)
-        }
     }
 
     fun prepareBTService(context: Context?) {
@@ -36,8 +32,8 @@ internal class WirelessKeyFobSDKApi {
         ScanManager.Companion.getInstance().stopScan()
     }
 
-    fun init(keyFob: Remote?) {
-        CommandUtil.setLock(ConnectManager.Companion.getInstance().getConnectParam(), keyFob)
+    fun init(keyFob: Remote) {
+        CommandUtil.setLock(ConnectManager.Companion.getInstance().getConnectParam()!!, keyFob)
     }
 
     companion object {

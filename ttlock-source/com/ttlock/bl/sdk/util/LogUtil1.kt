@@ -6,7 +6,7 @@ import android.util.Log
  * Created by Sciener on 2016/5/9.
  */
 object LogUtil {
-    private var DBG: Boolean = BuildConfig.DEBUG
+    private var DBG: Boolean = true
     private var callerClazzName: String? = null
     private var callerMethodName: String? = null
     private var callerLineNumber = 0
@@ -22,9 +22,9 @@ object LogUtil {
     private fun generateCallerInfo() {
         val caller = Throwable().stackTrace[2]
         callerClazzName = caller.className
-        val index = callerClazzName.lastIndexOf(".")
-        if (index + 1 < callerClazzName.length) callerClazzName =
-            callerClazzName.substring(index + 1)
+        val index = callerClazzName!!.lastIndexOf(".")
+        if (index + 1 < callerClazzName!!.length) callerClazzName =
+            callerClazzName!!.substring(index + 1)
         callerMethodName = caller.methodName
         callerLineNumber = caller.lineNumber
 
@@ -48,7 +48,7 @@ object LogUtil {
 //        d(content, true);
         if (DBG) {
             generateCallerInfo()
-            Log.d(callerClazzName, String.format(msg, callerMethodName, callerLineNumber, content))
+            Log.d(callerClazzName!!, String.format(msg, callerMethodName, callerLineNumber, content))
         }
     }
 
@@ -71,7 +71,7 @@ object LogUtil {
     fun d(content: String?, DBG: Boolean) {
         if (LogUtil.DBG && DBG) {
             generateCallerInfo()
-            Log.d(callerClazzName, String.format(msg, callerMethodName, callerLineNumber, content))
+            Log.d(callerClazzName!!, String.format(msg, callerMethodName, callerLineNumber, content))
         }
     }
 
@@ -79,7 +79,7 @@ object LogUtil {
     fun i(content: String?, DBG: Boolean) {
         if (LogUtil.DBG && DBG) {
             generateCallerInfo()
-            Log.i(callerClazzName, String.format(msg, callerMethodName, callerLineNumber, content))
+            Log.i(callerClazzName!!, String.format(msg, callerMethodName, callerLineNumber, content))
         }
     }
 
@@ -87,7 +87,7 @@ object LogUtil {
     fun w(content: String?, DBG: Boolean) {
         if (LogUtil.DBG && DBG) {
             generateCallerInfo()
-            Log.w(callerClazzName, String.format(msg, callerMethodName, callerLineNumber, content))
+            Log.w(callerClazzName!!, String.format(msg, callerMethodName, callerLineNumber, content))
         }
     }
 
@@ -95,7 +95,7 @@ object LogUtil {
     fun e(content: String?, DBG: Boolean) {
         if (LogUtil.DBG && DBG) {
             generateCallerInfo()
-            Log.e(callerClazzName, String.format(msg, callerMethodName, callerLineNumber, content))
+            Log.e(callerClazzName!!, String.format(msg, callerMethodName, callerLineNumber, content))
         }
     }
 }

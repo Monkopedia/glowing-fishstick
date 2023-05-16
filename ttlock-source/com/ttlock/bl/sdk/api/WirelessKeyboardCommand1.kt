@@ -64,16 +64,19 @@ internal class WirelessKeyboardCommand {
 //        LogUtil.d("mIsChecksumValid : " + mIsChecksumValid, DBG);
     }
 
+    @JvmName("setCommand1")
     fun setCommand(command: Byte) {
         this.command = command
     }
 
+    @JvmName("getCommand1")
     fun getCommand(): Byte {
         return command
     }
 
+    @JvmName("getData1")
     fun getData(): ByteArray? {
-        return getData(getAeskey())
+        return getData(getAeskey()!!)
     }
 
     fun getAeskey(): ByteArray? {
@@ -83,11 +86,12 @@ internal class WirelessKeyboardCommand {
         return AESUtil.aesEncrypt(macBytes, WirelessKeyboardCommand.Companion.defaultAeskey)
     }
 
-    fun getData(aesKeyArray: ByteArray?): ByteArray? {
-        val values: ByteArray? = AESUtil.aesDecrypt(data, aesKeyArray)
+    fun getData(aesKeyArray: ByteArray): ByteArray? {
+        val values: ByteArray? = AESUtil.aesDecrypt(data!!, aesKeyArray)
         return values
     }
 
+    @JvmName("setData1")
     fun setData(data: ByteArray?) {
         setData(data, getAeskey())
     }

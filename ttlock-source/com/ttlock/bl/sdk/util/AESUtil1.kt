@@ -17,7 +17,7 @@ object AESUtil {
         var encryptResArray: ByteArray? = null
         try {
 //            LogUtil.d("aesKey:" + DigitUtil.byteArrayToHexString(aesKeyArray), true);
-            encryptResArray = AESUtil.Encrypt(source, aesKeyArray, aesKeyArray)
+            encryptResArray = AESUtil.Encrypt(source!!, aesKeyArray, aesKeyArray!!)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -25,7 +25,7 @@ object AESUtil {
         return encryptResArray
     }
 
-    fun aesDecrypt(source: ByteArray?, aesKeyArray: ByteArray?): ByteArray? {
+    fun aesDecrypt(source: ByteArray, aesKeyArray: ByteArray): ByteArray? {
         var decryptResArray: ByteArray? = null
         try {
 //            LogUtil.d("aesKey:" + DigitUtil.byteArrayToHexString(aesKeyArray), true);

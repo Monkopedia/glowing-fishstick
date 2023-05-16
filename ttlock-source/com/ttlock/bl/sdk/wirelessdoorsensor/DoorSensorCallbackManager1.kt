@@ -2,6 +2,9 @@ package com.ttlock.bl.sdk.wirelessdoorsensor
 
 import android.util.SparseArray
 import com.ttlock.bl.sdk.wirelessdoorsensor.callback.ConnectCallback
+import com.ttlock.bl.sdk.wirelessdoorsensor.callback.DoorSensorCallback
+import com.ttlock.bl.sdk.wirelessdoorsensor.callback.ScanWirelessDoorSensorCallback
+import com.ttlock.bl.sdk.wirelessdoorsensor.model.DoorSensorError
 import com.ttlock.bl.sdk.wirelessdoorsensor.model.OperationType
 
 /**
@@ -18,7 +21,7 @@ internal class DoorSensorCallbackManager private constructor() {
     }
 
     private object InstanceHolder {
-        private val mInstance = DoorSensorCallbackManager()
+        val mInstance = DoorSensorCallbackManager()
     }
 
     fun setScanCallback(callback: ScanWirelessDoorSensorCallback?) {
@@ -71,7 +74,7 @@ internal class DoorSensorCallbackManager private constructor() {
             return null
         }
         val operationType: Int = mCallbackArray.keyAt(0)
-        val currentCallback: DoorSensorCallback = mCallbackArray.get(operationType)
+        val currentCallback: DoorSensorCallback? = mCallbackArray.get(operationType)
         if (currentCallback != null) {
             mCallbackArray.clear()
         }

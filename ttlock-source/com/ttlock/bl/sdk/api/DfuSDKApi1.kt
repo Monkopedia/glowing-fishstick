@@ -294,7 +294,7 @@ internal class DfuSDKApi {
     }
 
     fun startDfu(
-        context: Context?,
+        context: Context,
         lockData: String?,
         lockMac: String?,
         firmwarePackage: String?,
@@ -642,7 +642,7 @@ internal class DfuSDKApi {
         } else {
             attemptTime = 1
             DfuServiceListenerHelper.registerProgressListener(mContext, mDfuProgressListener)
-            if (NetworkUtil.isNetConnected(mContext)) {
+            if (NetworkUtil.isNetConnected(mContext!!)) {
                 setLockTime()
                 //            getOperationLog(lockData, lockmac);
             } else {

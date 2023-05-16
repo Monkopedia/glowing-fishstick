@@ -5,7 +5,7 @@
 package com.ttlock.bl.sdk.telink.ble
 
 import com.ttlock.bl.sdk.telink.ble.Command.CommandType
-import com.ttlock.bl.sdk.telink.bleimport.Command.CommandType.WRITE
+import com.ttlock.bl.sdk.telink.ble.Command.CommandType.WRITE
 import com.ttlock.bl.sdk.telink.util.Arrays
 import java.util.*
 import java.util.UUID

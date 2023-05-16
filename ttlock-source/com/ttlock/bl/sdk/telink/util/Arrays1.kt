@@ -6,6 +6,7 @@ package com.ttlock.bl.sdk.telink.util
 
 import java.io.UnsupportedEncodingException
 import java.lang.StringBuilder
+import java.nio.charset.Charset
 import java.util.*
 import kotlin.Throws
 
@@ -92,8 +93,8 @@ object Arrays {
     }
 
     @Throws(UnsupportedEncodingException::class)
-    fun bytesToString(data: ByteArray?, charsetName: String?): String {
-        return String(data!!, charsetName)
+    fun bytesToString(data: ByteArray, charsetName: String): String {
+        return String(data, Charset.forName(charsetName))
     }
 
     /**
@@ -134,10 +135,10 @@ object Arrays {
         if (src.size != 4) return 0
         val value: Int
         value = (
-            src[offset] and 0xFF
-                or (src[offset + 1] and 0xFF shl 8)
-                or (src[offset + 2] and 0xFF shl 16)
-                or (src[offset + 3] and 0xFF shl 24)
+            src[offset].toInt() and 0xFF
+                or (src[offset + 1].toInt() and 0xFF shl 8)
+                or (src[offset + 2].toInt() and 0xFF shl 16)
+                or (src[offset + 3].toInt() and 0xFF shl 24)
             )
         return value
     }

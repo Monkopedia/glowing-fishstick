@@ -44,7 +44,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int
     protected var scanRecord: ByteArray?
     protected var name: String
     protected var mac: String
-    protected var macBytes: ByteArray?
+    protected var macBytes: ByteArray? = null
     protected var type: Int
     protected var mServices: List<BluetoothGattService>? = null
     protected var processing = false
@@ -91,7 +91,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int
             for (i in 0 until length) {
                 macBytes!![i] = (strArray[i].toInt(16) and 0xFF).toByte()
             }
-            Arrays.reverse(macBytes, 0, length - 1)
+            Arrays.reverse(macBytes!!, 0, length - 1)
         }
         return macBytes
     }
@@ -184,7 +184,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int
     }
 
     fun requestConnectionPriority(connectionPriority: Int): Boolean {
-        return gatt.requestConnectionPriority( connectionPriority )
+        return gatt!!.requestConnectionPriority( connectionPriority )
     }
 
     /********************************************************************************
@@ -270,44 +270,44 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int
             CommandType.READ -> {
                 postCommandTimeoutTask()
                 readCharacteristic(
-                    commandContext, command.serviceUUID,
-                    command.characteristicUUID
+                    commandContext, command.serviceUUID!!,
+                    command.characteristicUUID!!
                 )
             }
             CommandType.WRITE -> {
                 postCommandTimeoutTask()
                 writeCharacteristic(
-                    commandContext, command.serviceUUID,
-                    command.characteristicUUID,
+                    commandContext, command.serviceUUID!!,
+                    command.characteristicUUID!!,
                     BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT,
-                    command.data
+                    command.data!!
                 )
             }
             CommandType.READ_DESCRIPTOR -> {
                 postCommandTimeoutTask()
                 readDescriptor(
                     commandContext,
-                    command.serviceUUID,
-                    command.characteristicUUID,
-                    command.descriptorUUID
+                    command.serviceUUID!!,
+                    command.characteristicUUID!!,
+                    command.descriptorUUID!!
                 )
             }
             CommandType.WRITE_NO_RESPONSE -> {
                 postCommandTimeoutTask()
                 writeCharacteristic(
-                    commandContext, command.serviceUUID,
-                    command.characteristicUUID,
+                    commandContext, command.serviceUUID!!,
+                    command.characteristicUUID!!,
                     BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE,
-                    command.data
+                    command.data!!
                 )
             }
             CommandType.ENABLE_NOTIFY -> enableNotification(
-                commandContext, command.serviceUUID,
-                command.characteristicUUID
+                commandContext, command.serviceUUID!!,
+                command.characteristicUUID!!
             )
             CommandType.DISABLE_NOTIFY -> disableNotification(
-                commandContext, command.serviceUUID,
-                command.characteristicUUID
+                commandContext, command.serviceUUID!!,
+                command.characteristicUUID!!
             )
         }
     }
@@ -325,7 +325,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int
             val callback = commandContext.callback
             commandContext.clear()
             callback?.success(
-                this, command,
+                this, command!!,
                 data
             )
         }
@@ -344,7 +344,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int
             val callback = commandContext.callback
             commandContext.clear()
             callback?.error(
-                this, command,
+                this, command!!,
                 errorMsg
             )
         }
@@ -363,7 +363,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int
             val callback = commandContext.callback
             commandContext.clear()
             if (callback != null) {
-                return callback.timeout(this, command)
+                return callback.timeout(this, command!!)
             }
         }
         return false
@@ -390,15 +390,15 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int
     ) {
         var success = true
         var errorMsg = ""
-        val service: BluetoothGattService = gatt.getService(serviceUUID)
+        val service: BluetoothGattService? = gatt!!.getService(serviceUUID)
         if (service != null) {
-            val characteristic: BluetoothGattCharacteristic = service
+            val characteristic: BluetoothGattCharacteristic? = service
                 .getCharacteristic(characteristicUUID)
             if (characteristic != null) {
-                val descriptor: BluetoothGattDescriptor =
+                val descriptor: BluetoothGattDescriptor? =
                     characteristic.getDescriptor(descriptorUUID)
                 if (descriptor != null) {
-                    if (!gatt.readDescriptor(descriptor)) {
+                    if (!gatt!!.readDescriptor(descriptor)) {
                         success = false
                         errorMsg = "read descriptor error"
                     }
@@ -577,9 +577,9 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int
         if (writeType == BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE) {
             writeProperty = BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE
         }
-        val characteristics: List<BluetoothGattCharacteristic> = service
+        val characteristics: List<BluetoothGattCharacteristic>? = service
             .getCharacteristics()
-        for (c in characteristics) {
+        for (c in characteristics ?: emptyList()) {
             if (c.getProperties() and writeProperty != 0 &&
                 characteristicUUID == c.getUuid()
             ) {
@@ -595,9 +595,9 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int
         characteristicUUID: UUID
     ): BluetoothGattCharacteristic? {
         var characteristic: BluetoothGattCharacteristic? = null
-        val characteristics: List<BluetoothGattCharacteristic> = service
+        val characteristics: List<BluetoothGattCharacteristic>? = service
             .getCharacteristics()
-        for (c in characteristics) {
+        for (c in characteristics ?: emptyList()) {
             if (c.getProperties() and BluetoothGattCharacteristic.PROPERTY_NOTIFY != 0 &&
                 characteristicUUID == c.getUuid()
             ) {
@@ -606,7 +606,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int
             }
         }
         if (characteristic != null) return characteristic
-        for (c in characteristics) {
+        for (c in characteristics ?: emptyList()) {
             if (c.getProperties() and BluetoothGattCharacteristic.PROPERTY_INDICATE != 0 &&
                 characteristicUUID == c.getUuid()
             ) {
@@ -712,9 +712,9 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int
         commandCompleted()
     }
 
-    fun onCharacteristicWrite(
-        gatt: BluetoothGatt?,
-        characteristic: BluetoothGattCharacteristic?,
+    override fun onCharacteristicWrite(
+        gatt: BluetoothGatt,
+        characteristic: BluetoothGattCharacteristic,
         status: Int
     ) {
         super.onCharacteristicWrite(gatt, characteristic, status)
@@ -821,7 +821,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int
         super.onReliableWriteCompleted(gatt, status)
     }
 
-    private inner class CommandContext(var callback: Callback?, var command: Command?) {
+    protected inner class CommandContext(var callback: Callback?, var command: Command?) {
         fun clear() {
             command = null
             callback = null
@@ -832,7 +832,7 @@ open class Peripheral(device: BluetoothDevice, scanRecord: ByteArray?, rssi: Int
         override fun run() {
             if (!monitorRssi) return
             if (!isConnected()) return
-            if (gatt != null) gatt.readRemoteRssi()
+            if (gatt != null) gatt!!.readRemoteRssi()
             mRssiUpdateHandler.postDelayed(mRssiUpdateRunnable, updateIntervalMill)
         }
     }

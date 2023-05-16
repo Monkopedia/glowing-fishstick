@@ -1376,9 +1376,9 @@ internal class BluetoothImpl private constructor() {
                             command.getData()
                     LockType.LOCK_TYPE_V3, LockType.LOCK_TYPE_V3_CAR -> {
                         mHandler?.removeCallbacks(disConRunable)
-                        data = command.getData(aesKeyArray)
+                        data = command.getData(aesKeyArray!!)
                     }
-                    LockType.LOCK_TYPE_V2S_PLUS -> data = command.getData(aesKeyArray)
+                    LockType.LOCK_TYPE_V2S_PLUS -> data = command.getData(aesKeyArray!!)
                     else -> {}
                 }
                 if (data == null || data!!.size == 0) {
